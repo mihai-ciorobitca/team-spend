@@ -1,9 +1,11 @@
 import { errorResponse, mapSettings, requireAdmin, supabaseRequest } from "@/lib/supabase-admin";
+import { requireSiteAccess } from "@/lib/site-password";
 
 const CURRENCIES = new Set(["THB", "USD", "EUR", "GBP", "SGD"]);
 
 export async function PATCH(request: Request) {
   try {
+    await requireSiteAccess(request);
     const admin = await requireAdmin(request);
     const body = (await request.json()) as { teamName?: string; currency?: string; monthlyBudget?: number; requireProof?: boolean; approvalThreshold?: number };
     const teamName = body.teamName?.trim();

@@ -1,4 +1,5 @@
 import { deleteProof, errorResponse, getMembers, getTeam, mapExpense, requireMember, supabaseRequest, uploadProof } from "@/lib/supabase-admin";
+import { requireSiteAccess } from "@/lib/site-password";
 
 const METHODS = new Set(["cash", "card", "bank_transfer", "wallet"]);
 const CATEGORIES = new Set(["Meals", "Transport", "Software", "Supplies", "Utilities", "Travel", "Other"]);
@@ -11,6 +12,7 @@ function safeFileName(name: string) {
 export async function POST(request: Request) {
   let uploadedPath: string | null = null;
   try {
+    await requireSiteAccess(request);
     const current = await requireMember(request);
     const form = await request.formData();
     const merchant = String(form.get("merchant") ?? "").trim();

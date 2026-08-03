@@ -18,6 +18,10 @@ Without Supabase environment values, the interface runs in a clearly marked demo
 3. Copy `.env.example` to `.env.local` and fill in the project URL and service-role key.
 4. Restart the app. The first signed-in visitor becomes the initial admin. Every later visitor must first be added by email in Admin.
 
+## Password protection
+
+Set `SITE_PASSWORD` in the production environment to protect every page and API route with a shared password. Access is remembered for seven days in a secure, HttpOnly cookie. Changing the environment value immediately invalidates existing access cookies after redeployment.
+
 The service-role key is used only in server route handlers and is never sent to the browser. Production access is designed for a private OpenAI Site, which supplies the signed-in user's verified email to the app server.
 
 ## Main routes

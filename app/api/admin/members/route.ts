@@ -1,9 +1,11 @@
 import { errorResponse, mapMember, requireAdmin, supabaseRequest } from "@/lib/supabase-admin";
+import { requireSiteAccess } from "@/lib/site-password";
 
 const COLORS = ["#a9d9c7", "#f5a98c", "#c5b8e8", "#f3bf73", "#9fc5dc"];
 
 export async function POST(request: Request) {
   try {
+    await requireSiteAccess(request);
     const admin = await requireAdmin(request);
     const body = (await request.json()) as { name?: string; email?: string; role?: string };
     const name = body.name?.trim();
