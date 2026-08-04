@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Image from "next/image";
 
 export const metadata: Metadata = {
   title: { absolute: "Unlock Peptiking" },
@@ -21,7 +22,7 @@ export default async function LoginPage({ searchParams }: {
   return (
     <main className="login-shell">
       <section className="login-card">
-        <div className="login-brand"><span className="brand-mark">P</span><span>Peptiking</span></div>
+        <div className="login-brand"><Image className="brand-logo" src="/peptiking-logo.avif" alt="Peptiking" width={240} height={168} priority /></div>
         <div className="login-lock" aria-hidden="true"><span /></div>
         <p className="eyebrow">Private workspace</p>
         <h1>Team access only.</h1>

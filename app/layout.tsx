@@ -14,6 +14,13 @@ export async function generateMetadata(): Promise<Metadata> {
       template: "%s · Peptiking",
     },
     description: "A fast, mobile-first spending tracker for your whole team.",
+    icons: {
+      icon: [
+        { url: "/favicon.ico", sizes: "256x256", type: "image/x-icon" },
+        { url: "/icon.png", sizes: "512x512", type: "image/png" },
+      ],
+      apple: [{ url: "/icon.png", sizes: "512x512", type: "image/png" }],
+    },
     openGraph: {
       title: "Peptiking",
       description: "Team spending, sorted.",

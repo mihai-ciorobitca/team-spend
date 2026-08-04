@@ -94,23 +94,18 @@ textarea:focus-visible {
 .brand {
   display: flex;
   align-items: center;
-  gap: 11px;
-  font-size: 20px;
-  font-weight: 850;
-  letter-spacing: -0.04em;
+  min-height: 54px;
 }
 
-.brand-mark {
-  display: grid;
-  width: 34px;
-  height: 34px;
-  place-items: center;
-  border-radius: 11px 11px 11px 4px;
-  background: var(--orange);
-  color: white;
-  font-size: 19px;
-  font-weight: 900;
-  box-shadow: 0 7px 18px rgba(241, 120, 75, 0.27);
+.brand-logo {
+  display: block;
+  width: 104px;
+  height: auto;
+  object-fit: contain;
+}
+
+.mobile-topbar .brand-logo {
+  width: 92px;
 }
 
 .avatar {
@@ -1343,11 +1338,11 @@ textarea:focus-visible {
 .login-brand {
   display: flex;
   align-items: center;
-  gap: 10px;
   margin-bottom: 38px;
-  font-size: 18px;
-  font-weight: 850;
-  letter-spacing: -0.04em;
+}
+
+.login-brand .brand-logo {
+  width: 132px;
 }
 
 .login-lock {

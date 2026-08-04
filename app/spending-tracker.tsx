@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { FormEvent, useEffect, useMemo, useRef, useState, type CSSProperties, type KeyboardEvent as ReactKeyboardEvent } from "react";
 
 type Tab = "home" | "activity" | "admin";
@@ -403,7 +404,7 @@ function Sidebar({ tab, teamName, member, viewer, onNavigate }: {
 }) {
   return (
     <aside className="sidebar">
-      <div className="brand"><span className="brand-mark">P</span><span>Peptiking</span></div>
+      <div className="brand"><Image className="brand-logo" src="/peptiking-logo.avif" alt="Peptiking" width={240} height={168} priority /></div>
       <nav className="sidebar-nav" aria-label="Main navigation">
         <NavButton desktop label="Overview" symbol="⌂" active={tab === "home"} onClick={() => onNavigate("home")} />
         <NavButton desktop label="Expenses" symbol="≋" active={tab === "activity"} onClick={() => onNavigate("activity")} />
@@ -420,7 +421,7 @@ function Sidebar({ tab, teamName, member, viewer, onNavigate }: {
 function MobileTopbar({ viewer }: { viewer: { name: string; email: string } }) {
   return (
     <header className="mobile-topbar">
-      <div className="brand"><span className="brand-mark">P</span><span>Peptiking</span></div>
+      <div className="brand"><Image className="brand-logo" src="/peptiking-logo.avif" alt="Peptiking" width={240} height={168} priority /></div>
       <span className="avatar" style={avatarStyle("#a9d9c7")}>{initials(viewer.name)}</span>
     </header>
   );
