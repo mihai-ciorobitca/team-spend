@@ -63,18 +63,14 @@ const DEMO_EXPENSES: Expense[] = [
 
 const DEFAULT_SETTINGS: TeamSettings = {
   teamName: "Northstar Studio",
-  currency: "THB",
+  currency: "EUR",
   requireProof: true,
 };
 
 const CATEGORIES = ["Meals", "Transport", "Software", "Supplies", "Utilities", "Travel", "Other"];
 const CURRENCY_OPTIONS = [
-  { value: "THB", label: "Thai baht (THB)" },
-  { value: "VND", label: "Vietnamese đồng (VND)" },
   { value: "EUR", label: "Euro (EUR)" },
-  { value: "USD", label: "US dollar (USD)" },
-  { value: "GBP", label: "British pound (GBP)" },
-  { value: "SGD", label: "Singapore dollar (SGD)" },
+  { value: "VND", label: "Vietnamese đồng (VND)" },
 ];
 const CATEGORY_SYMBOLS: Record<string, string> = {
   Meals: "M",
@@ -107,7 +103,7 @@ function avatarStyle(color: string): CSSProperties {
 }
 
 function formatMoney(amount: number, currency: string, compact = false) {
-  const locale = currency === "VND" ? "vi-VN" : currency === "THB" ? "th-TH" : "en-US";
+  const locale = currency === "VND" ? "vi-VN" : "en-IE";
   return new Intl.NumberFormat(locale, {
     style: "currency",
     currency,

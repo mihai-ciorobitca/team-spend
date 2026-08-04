@@ -1,7 +1,7 @@
 import { errorResponse, mapSettings, requireAdmin, supabaseRequest } from "@/lib/supabase-admin";
 import { requireSiteAccess } from "@/lib/site-password";
 
-const CURRENCIES = new Set(["THB", "VND", "EUR", "USD", "GBP", "SGD"]);
+const CURRENCIES = new Set(["EUR", "VND"]);
 
 export async function PATCH(request: Request) {
   try {

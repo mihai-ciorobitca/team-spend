@@ -6,7 +6,7 @@ create extension if not exists pgcrypto;
 create table if not exists public.teams (
   id uuid primary key default gen_random_uuid(),
   name text not null default 'My Team' check (char_length(name) between 1 and 100),
-  currency text not null default 'THB' check (currency in ('THB', 'VND', 'EUR', 'USD', 'GBP', 'SGD')),
+  currency text not null default 'EUR' check (currency in ('EUR', 'VND')),
   require_proof boolean not null default true,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
@@ -92,7 +92,11 @@ on conflict (id) do update set
   allowed_mime_types = excluded.allowed_mime_types;
 
 -- Keep existing projects aligned when this schema is run again.
+update public.teams
+set currency = 'EUR'
+where currency not in ('EUR', 'VND');
+alter table public.teams alter column currency set default 'EUR';
 alter table public.teams drop constraint if exists teams_currency_check;
 alter table public.teams
   add constraint teams_currency_check
-  check (currency in ('THB', 'VND', 'EUR', 'USD', 'GBP', 'SGD'));
+  check (currency in ('EUR', 'VND'));

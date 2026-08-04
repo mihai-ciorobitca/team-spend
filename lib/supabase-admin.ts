@@ -18,6 +18,7 @@ type SupabaseTeamRow = {
 const DEFAULT_ADMIN_EMAIL = "admin@peptikingmedia.com";
 const DEFAULT_ADMIN_NAME = "Admin";
 const LEGACY_ADMIN_EMAIL = "owner@local.demo";
+const SUPPORTED_CURRENCIES = new Set(["EUR", "VND"]);
 
 type SupabaseExpenseRow = {
   id: string;
@@ -177,7 +178,7 @@ export async function requireMember(request: Request): Promise<SupabaseMemberRow
     const createdTeams = await supabaseRequest<SupabaseTeamRow[]>("/rest/v1/teams?select=*", {
       method: "POST",
       headers: { Prefer: "return=representation" },
-      body: JSON.stringify({ name: "My Team", currency: "THB", require_proof: true }),
+      body: JSON.stringify({ name: "My Team", currency: "EUR", require_proof: true }),
     });
     team = createdTeams[0];
   }
@@ -235,6 +236,13 @@ export function mapExpense(row: SupabaseExpenseRow, proofUrl: string | null = ro
 export async function getTeam(teamId: string) {
   const rows = await supabaseRequest<SupabaseTeamRow[]>(`/rest/v1/teams?id=eq.${encodeURIComponent(teamId)}&select=*&limit=1`);
   if (!rows[0]) throw new ApiError("Team settings were not found", 404);
+  if (!SUPPORTED_CURRENCIES.has(rows[0].currency)) {
+    const normalized = await supabaseRequest<SupabaseTeamRow[]>(
+      `/rest/v1/teams?id=eq.${encodeURIComponent(teamId)}&select=*`,
+      { method: "PATCH", headers: { Prefer: "return=representation" }, body: JSON.stringify({ currency: "EUR" }) },
+    );
+    return normalized[0] ?? { ...rows[0], currency: "EUR" };
+  }
   return rows[0];
 }
 

@@ -18,7 +18,7 @@ Without Supabase environment values, the interface runs in a clearly marked demo
 3. Copy `.env.example` to `.env.local` and fill in the project URL and service-role key.
 4. Restart the app. Add active spending profiles in Admin; everyone accesses the website with the same `SITE_PASSWORD` and chooses who spent when recording an expense.
 
-For an existing Peptiking database, run [`supabase/migrations/20260804_professional_settings.sql`](supabase/migrations/20260804_professional_settings.sql) once to enable Vietnamese đồng. Euro is also available in the currency menu.
+Peptiking supports Euro and Vietnamese đồng. Existing unsupported currency settings automatically switch to Euro; [`supabase/migrations/20260804_eur_vnd_only.sql`](supabase/migrations/20260804_eur_vnd_only.sql) can be run once to enforce the same rule directly in Supabase.
 
 ## Password protection
 
