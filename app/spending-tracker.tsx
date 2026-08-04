@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import { FormEvent, useEffect, useMemo, useRef, useState, type CSSProperties, type KeyboardEvent as ReactKeyboardEvent } from "react";
+import { createPortal } from "react-dom";
 
 type Tab = "home" | "activity" | "admin";
 type Role = "admin" | "member";
@@ -597,6 +598,14 @@ function ExpenseModal({ members, settings, onClose, onSubmit }: {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  useEffect(() => {
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = previousOverflow;
+    };
+  }, []);
+
   const selectProof = (file: File | null) => {
     setValue((current) => ({ ...current, proof: file }));
     if (preview?.startsWith("blob:")) URL.revokeObjectURL(preview);
@@ -621,9 +630,9 @@ function ExpenseModal({ members, settings, onClose, onSubmit }: {
 
   const proofPrompt = value.paymentMethod === "cash" ? "Take a receipt photo" : "Add payment screenshot";
 
-  return (
+  return createPortal(
     <div className="modal-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) onClose(); }}>
-      <form className="expense-modal" onSubmit={submit} aria-label="Add expense">
+      <form className="expense-modal" onSubmit={submit} aria-label="Add expense" role="dialog" aria-modal="true">
         <div className="modal-head"><div><p className="eyebrow">New spending</p><h2>Add an expense</h2></div><button type="button" className="close-button" onClick={onClose} aria-label="Close">×</button></div>
         <label className="amount-field"><span>{settings.currency}</span><input autoFocus inputMode="decimal" placeholder="0" aria-label="Amount" value={value.amount} onChange={(event) => setValue({ ...value, amount: event.target.value })} /></label>
 
@@ -642,7 +651,8 @@ function ExpenseModal({ members, settings, onClose, onSubmit }: {
         {error && <p role="alert" style={{ color: "#b64b2c", fontSize: 12, fontWeight: 750, margin: "12px 0 0" }}>{error}</p>}
         <div className="modal-actions"><button type="button" className="secondary-button" onClick={onClose}>Cancel</button><button className="primary-button dark" disabled={saving}>{saving ? "Saving…" : "Save expense"}</button></div>
       </form>
-    </div>
+    </div>,
+    document.body,
   );
 }
 
