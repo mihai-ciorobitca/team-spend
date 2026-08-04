@@ -116,6 +116,13 @@ function requestIdentity(request: Request) {
 
   if (userId && email) return { userId, email: email.toLowerCase(), fullName };
   if (process.env.NODE_ENV !== "production") return { userId: "local-owner", email: "owner@local.demo", fullName: "Rog" };
+  if (process.env.SITE_PASSWORD) {
+    return {
+      userId: "shared-password-user",
+      email: (process.env.TEAMSPEND_ADMIN_EMAIL || "owner@local.demo").toLowerCase(),
+      fullName: process.env.TEAMSPEND_ADMIN_NAME || "Rog",
+    };
+  }
   throw new ApiError("Sign in to access this team", 401);
 }
 
