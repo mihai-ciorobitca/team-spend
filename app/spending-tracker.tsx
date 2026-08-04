@@ -404,7 +404,7 @@ function Sidebar({ tab, teamName, member, viewer, onNavigate }: {
 }) {
   return (
     <aside className="sidebar">
-      <div className="brand"><Image className="brand-logo" src="/peptiking-logo.avif" alt="Peptiking" width={240} height={168} priority /></div>
+      <div className="brand"><Image className="brand-symbol" src="/icon.png" alt="" width={40} height={40} priority /><span>Peptiking</span></div>
       <nav className="sidebar-nav" aria-label="Main navigation">
         <NavButton desktop label="Overview" symbol="⌂" active={tab === "home"} onClick={() => onNavigate("home")} />
         <NavButton desktop label="Expenses" symbol="≋" active={tab === "activity"} onClick={() => onNavigate("activity")} />
@@ -421,7 +421,7 @@ function Sidebar({ tab, teamName, member, viewer, onNavigate }: {
 function MobileTopbar({ viewer }: { viewer: { name: string; email: string } }) {
   return (
     <header className="mobile-topbar">
-      <div className="brand"><Image className="brand-logo" src="/peptiking-logo.avif" alt="Peptiking" width={240} height={168} priority /></div>
+      <div className="brand"><Image className="brand-symbol" src="/icon.png" alt="" width={40} height={40} priority /><span>Peptiking</span></div>
       <span className="avatar" style={avatarStyle("#a9d9c7")}>{initials(viewer.name)}</span>
     </header>
   );
