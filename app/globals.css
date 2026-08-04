@@ -2887,6 +2887,27 @@ body {
   cursor: pointer;
 }
 
+.reload-button {
+  position: fixed;
+  z-index: 29;
+  right: 20px;
+  bottom: 20px;
+  display: inline-grid;
+  width: 42px;
+  height: 42px;
+  place-items: center;
+  border: 1px solid #cbd8d5;
+  border-radius: 50%;
+  background: #fff;
+  color: var(--teal);
+  box-shadow: 0 8px 22px rgba(14, 47, 52, 0.16);
+  cursor: pointer;
+}
+
+.reload-button:active {
+  transform: scale(0.95);
+}
+
 .expense-actions {
   display: inline-flex;
   align-items: center;
@@ -2945,6 +2966,13 @@ body {
 }
 
 @media (max-width: 699px) {
+  .reload-button {
+    right: 16px;
+    bottom: calc(86px + env(safe-area-inset-bottom));
+    width: 44px;
+    height: 44px;
+  }
+
   .update-banner {
     margin: 0 -2px 14px;
   }

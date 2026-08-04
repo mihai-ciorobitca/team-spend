@@ -543,6 +543,7 @@ export function SpendingTracker() {
       </main>
 
       <BottomNav tab={tab} isAdmin={isAdmin} onNavigate={navigate} onAdd={() => setAddOpen(true)} />
+      <button type="button" className="reload-button" onClick={getUpdate} aria-label="Reload workspace" title="Reload workspace"><RefreshCw size={18} strokeWidth={2} aria-hidden="true" /></button>
 
       {addOpen && !isAdmin && (
         <ExpenseModal
