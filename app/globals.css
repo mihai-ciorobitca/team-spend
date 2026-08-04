@@ -2482,3 +2482,115 @@ body {
     margin-top: 10px;
   }
 }
+
+.app-loading {
+  position: fixed;
+  inset: 0;
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  gap: 12px;
+  background: var(--cream);
+  color: var(--ink-soft);
+  font-size: 13px;
+  font-weight: 700;
+  text-align: center;
+}
+
+.app-loading strong {
+  color: var(--ink);
+  font-size: 18px;
+}
+
+.app-loading .secondary-button {
+  margin-top: 8px;
+  text-decoration: none;
+}
+
+.mobile-account {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+
+.mobile-account > div {
+  display: grid;
+  text-align: right;
+}
+
+.mobile-account strong {
+  max-width: 105px;
+  overflow: hidden;
+  color: var(--ink);
+  font-size: 12px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mobile-account > div span {
+  color: var(--ink-soft);
+  font-size: 10px;
+}
+
+.sign-out-link {
+  display: inline-block;
+  margin-top: 6px;
+  color: var(--ink-soft);
+  font-size: 10px;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.sign-out-link:hover {
+  color: var(--teal);
+  text-decoration: underline;
+}
+
+.mobile-account > .sign-out-link {
+  margin: 0;
+  border-left: 1px solid var(--line);
+  padding-left: 9px;
+}
+
+.bottom-nav.member-nav {
+  grid-template-columns: 1fr 62px 1fr;
+}
+
+@media (max-width: 699px) {
+  .login-lock {
+    display: none;
+  }
+
+  .login-brand {
+    margin-bottom: clamp(10px, 2dvh, 18px);
+  }
+
+  .login-card h1 {
+    font-size: clamp(28px, 5.3dvh, 35px);
+  }
+
+  .login-form {
+    gap: 7px;
+  }
+
+  .login-form input,
+  .login-form .primary-button {
+    min-height: 44px;
+  }
+
+  .login-footnote {
+    margin-top: 10px;
+  }
+}
+
+@media (max-width: 420px) {
+  .mobile-account > div {
+    display: none;
+  }
+}
+
+@media (max-height: 620px) {
+  .login-lock {
+    display: none;
+  }
+}

@@ -32,6 +32,7 @@ export async function POST(request: Request) {
 
     const [team, teamMembers] = await Promise.all([getTeam(current.team_id), getMembers(current.team_id)]);
     if (!teamMembers.some((member) => member.id === spenderId && member.status === "active" && member.role === "member")) return Response.json({ message: "Choose an active team member" }, { status: 400 });
+    if (current.role !== "admin" && spenderId !== current.id) return Response.json({ message: "Members can only submit their own spending" }, { status: 403 });
 
     const file = proof instanceof File && proof.size > 0 ? proof : null;
     if (team.require_proof && !file) return Response.json({ message: "Proof of spending is required" }, { status: 400 });

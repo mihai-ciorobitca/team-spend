@@ -103,6 +103,15 @@ export async function supabaseRequest<T>(path: string, init: RequestInit = {}): 
 }
 
 function requestIdentity(request: Request) {
+  const siteEmail = request.headers.get("x-peptiking-user-email")?.trim().toLowerCase();
+  if (siteEmail && /^\S+@\S+\.\S+$/.test(siteEmail)) {
+    return {
+      userId: `site-password:${siteEmail}`,
+      email: siteEmail,
+      fullName: siteEmail.split("@")[0],
+    };
+  }
+
   const userId = request.headers.get("oai-authenticated-user-id");
   const email = request.headers.get("oai-authenticated-user-email");
   const encodedName = request.headers.get("oai-authenticated-user-full-name");
@@ -256,6 +265,18 @@ export async function getMembers(teamId: string) {
   );
   const activatedById = new Map(activated.map((member) => [member.id, member]));
   return rows.map((member) => activatedById.get(member.id) ?? member);
+}
+
+export async function findMemberByEmail(email: string) {
+  const rows = await supabaseRequest<SupabaseMemberRow[]>(
+    `/rest/v1/team_members?email=eq.${encodeURIComponent(email.trim().toLowerCase())}&select=*&limit=1`,
+  );
+  return rows[0] ?? null;
+}
+
+export async function hasTeamMembers() {
+  const rows = await supabaseRequest<Array<{ id: string }>>("/rest/v1/team_members?select=id&limit=1");
+  return rows.length > 0;
 }
 
 export async function getExpenses(teamId: string) {

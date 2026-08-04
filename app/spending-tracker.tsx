@@ -217,7 +217,7 @@ function todayValue() {
   return new Date(date.getTime() - offset * 60_000).toISOString().slice(0, 10);
 }
 
-export function SpendingTracker({ viewer }: { viewer: { name: string; email: string } }) {
+export function SpendingTracker() {
   const [tab, setTab] = useState<Tab>("home");
   const [members, setMembers] = useState<Member[]>(DEMO_MEMBERS);
   const [expenses, setExpenses] = useState<Expense[]>(DEMO_EXPENSES);
@@ -228,6 +228,8 @@ export function SpendingTracker({ viewer }: { viewer: { name: string; email: str
   const [toast, setToast] = useState<string | null>(null);
   const [search, setSearch] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("All");
+  const [ready, setReady] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
   useEffect(() => {
     let active = true;
@@ -238,7 +240,8 @@ export function SpendingTracker({ viewer }: { viewer: { name: string; email: str
         return payload;
       })
       .then((payload) => {
-        if (!active || !payload.configured) return;
+        if (!active) return;
+        if (!payload.configured) return;
         setConfigured(true);
         if (payload.members?.length) setMembers(payload.members);
         if (payload.expenses) setExpenses(payload.expenses);
@@ -246,7 +249,10 @@ export function SpendingTracker({ viewer }: { viewer: { name: string; email: str
         if (payload.currentMember) setCurrentMember(payload.currentMember);
       })
       .catch((error: Error) => {
-        if (active) setToast(`${error.message}. Showing demo data.`);
+        if (active) setLoadError(error.message);
+      })
+      .finally(() => {
+        if (active) setReady(true);
       });
 
     return () => {
@@ -272,9 +278,11 @@ export function SpendingTracker({ viewer }: { viewer: { name: string; email: str
       return matchesCategory && matchesSearch;
     });
   }, [categoryFilter, expenses, members, search]);
+  const isAdmin = currentMember.role === "admin";
 
   const showToast = (message: string) => setToast(message);
   const navigate = (nextTab: Tab) => {
+    if (nextTab === "admin" && !isAdmin) return;
     setTab(nextTab);
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
@@ -317,18 +325,25 @@ export function SpendingTracker({ viewer }: { viewer: { name: string; email: str
     showToast("Expense saved and proof uploaded.");
   };
 
+  if (!ready) {
+    return <main className="app-loading" aria-live="polite"><Image className="brand-symbol" src="/icon.png" alt="" width={40} height={40} priority /><span>Opening your workspace…</span></main>;
+  }
+
+  if (loadError) {
+    return <main className="app-loading" role="alert"><Image className="brand-symbol" src="/icon.png" alt="" width={40} height={40} priority /><strong>Could not open your workspace</strong><span>{loadError}</span><a className="secondary-button" href="/api/site-logout">Return to sign in</a></main>;
+  }
+
   return (
     <div className="app-shell">
       <Sidebar
         tab={tab}
         teamName={settings.teamName}
         member={currentMember}
-        viewer={viewer}
         onNavigate={navigate}
       />
 
       <main className="main-canvas">
-        <MobileTopbar viewer={viewer} />
+        <MobileTopbar member={currentMember} />
         {!configured && (
           <div className="demo-banner">
             <span>Demo data</span>
@@ -342,6 +357,7 @@ export function SpendingTracker({ viewer }: { viewer: { name: string; email: str
             expenses={expenses}
             members={members}
             settings={settings}
+            currentMember={currentMember}
             totalSpend={totalSpend}
             cashSpend={cashSpend}
             digitalSpend={digitalSpend}
@@ -363,7 +379,7 @@ export function SpendingTracker({ viewer }: { viewer: { name: string; email: str
           />
         )}
 
-        {tab === "admin" && (
+        {tab === "admin" && isAdmin && (
           <AdminView
             configured={configured}
             members={members}
@@ -376,13 +392,15 @@ export function SpendingTracker({ viewer }: { viewer: { name: string; email: str
         )}
       </main>
 
-      <BottomNav tab={tab} onNavigate={navigate} onAdd={() => setAddOpen(true)} />
+      <BottomNav tab={tab} isAdmin={isAdmin} onNavigate={navigate} onAdd={() => setAddOpen(true)} />
 
       {addOpen && (
         <ExpenseModal
-          members={members.filter(
-            (member) => member.status === "active" && member.role === "member",
-          )}
+          members={members.filter((member) => (
+            member.status === "active"
+            && member.role === "member"
+            && (isAdmin || member.id === currentMember.id)
+          ))}
           settings={settings}
           onClose={() => setAddOpen(false)}
           onSubmit={addExpense}
@@ -394,11 +412,10 @@ export function SpendingTracker({ viewer }: { viewer: { name: string; email: str
   );
 }
 
-function Sidebar({ tab, teamName, member, viewer, onNavigate }: {
+function Sidebar({ tab, teamName, member, onNavigate }: {
   tab: Tab;
   teamName: string;
   member: Member;
-  viewer: { name: string; email: string };
   onNavigate: (tab: Tab) => void;
 }) {
   return (
@@ -407,21 +424,21 @@ function Sidebar({ tab, teamName, member, viewer, onNavigate }: {
       <nav className="sidebar-nav" aria-label="Main navigation">
         <NavButton desktop label="Overview" symbol="⌂" active={tab === "home"} onClick={() => onNavigate("home")} />
         <NavButton desktop label="Expenses" symbol="≋" active={tab === "activity"} onClick={() => onNavigate("activity")} />
-        <NavButton desktop label="Admin" symbol="⚙" active={tab === "admin"} onClick={() => onNavigate("admin")} />
+        {member.role === "admin" && <NavButton desktop label="Admin" symbol="⚙" active={tab === "admin"} onClick={() => onNavigate("admin")} />}
       </nav>
       <div className="sidebar-account">
-        <span className="avatar" style={avatarStyle(member.avatarColor)}>{initials(viewer.name)}</span>
-        <div><strong>{viewer.name}</strong><span>{teamName}</span></div>
+        <span className="avatar" style={avatarStyle(member.avatarColor)}>{initials(member.name)}</span>
+        <div><strong>{member.name}</strong><span>{member.role === "admin" ? "Administrator" : "Team member"} · {teamName}</span><a className="sign-out-link" href="/api/site-logout">Sign out</a></div>
       </div>
     </aside>
   );
 }
 
-function MobileTopbar({ viewer }: { viewer: { name: string; email: string } }) {
+function MobileTopbar({ member }: { member: Member }) {
   return (
     <header className="mobile-topbar">
       <div className="brand"><Image className="brand-symbol" src="/icon.png" alt="" width={40} height={40} priority /><span>Peptiking</span></div>
-      <span className="avatar" style={avatarStyle("#a9d9c7")}>{initials(viewer.name)}</span>
+      <div className="mobile-account"><div><strong>{member.name}</strong><span>{member.role === "admin" ? "Admin" : "Member"}</span></div><span className="avatar" style={avatarStyle(member.avatarColor)}>{initials(member.name)}</span><a className="sign-out-link" href="/api/site-logout" aria-label="Sign out">Sign out</a></div>
     </header>
   );
 }
@@ -433,7 +450,16 @@ function NavButton({ label, symbol, active, desktop, onClick }: { label: string;
   return <button className={`nav-button ${active ? "active" : ""}`} onClick={onClick}><span>{symbol}</span><span>{label}</span></button>;
 }
 
-function BottomNav({ tab, onNavigate, onAdd }: { tab: Tab; onNavigate: (tab: Tab) => void; onAdd: () => void }) {
+function BottomNav({ tab, isAdmin, onNavigate, onAdd }: { tab: Tab; isAdmin: boolean; onNavigate: (tab: Tab) => void; onAdd: () => void }) {
+  if (!isAdmin) {
+    return (
+      <nav className="bottom-nav member-nav" aria-label="Mobile navigation">
+        <NavButton label="Home" symbol="⌂" active={tab === "home"} onClick={() => onNavigate("home")} />
+        <button className="nav-add" onClick={onAdd} aria-label="Add expense">+</button>
+        <NavButton label="Expenses" symbol="≋" active={tab === "activity"} onClick={() => onNavigate("activity")} />
+      </nav>
+    );
+  }
   return (
     <nav className="bottom-nav" aria-label="Mobile navigation">
       <NavButton label="Home" symbol="⌂" active={tab === "home"} onClick={() => onNavigate("home")} />
@@ -444,10 +470,11 @@ function BottomNav({ tab, onNavigate, onAdd }: { tab: Tab; onNavigate: (tab: Tab
   );
 }
 
-function HomeDashboard({ expenses, members, settings, totalSpend, cashSpend, digitalSpend, onAdd, onViewAll }: {
+function HomeDashboard({ expenses, members, settings, currentMember, totalSpend, cashSpend, digitalSpend, onAdd, onViewAll }: {
   expenses: Expense[];
   members: Member[];
   settings: TeamSettings;
+  currentMember: Member;
   totalSpend: number;
   cashSpend: number;
   digitalSpend: number;
@@ -466,7 +493,7 @@ function HomeDashboard({ expenses, members, settings, totalSpend, cashSpend, dig
       <div className="intro-row">
         <div>
           <p className="eyebrow">August overview</p>
-          <h1 className="page-heading">Your spending overview.</h1>
+          <h1 className="page-heading">Welcome, {currentMember.name.split(" ")[0]}.</h1>
           <p className="intro-copy">Your team has logged {expenses.length} expenses this month.</p>
         </div>
         <button className="primary-button desktop-add" onClick={onAdd}><span>＋</span> Add expense</button>
@@ -590,7 +617,7 @@ function ExpenseModal({ members, settings, onClose, onSubmit }: {
     category: "Meals",
     paymentMethod: "cash",
     spentAt: todayValue(),
-    spenderId: "",
+    spenderId: members.length === 1 ? members[0].id : "",
     notes: "",
     proof: null,
   });

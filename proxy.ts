@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { constantTimeEqual, createSiteAccessToken, SITE_ACCESS_COOKIE } from "@/lib/site-password";
+import { readSiteAccessToken, SITE_ACCESS_COOKIE, SITE_IDENTITY_HEADER } from "@/lib/site-password";
 
-const PUBLIC_PATHS = new Set(["/login", "/api/site-login"]);
+const PUBLIC_PATHS = new Set(["/login", "/api/site-login", "/api/site-logout"]);
 
 export async function proxy(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
@@ -19,8 +19,12 @@ export async function proxy(request: NextRequest) {
   }
 
   const suppliedToken = request.cookies.get(SITE_ACCESS_COOKIE)?.value;
-  const expectedToken = await createSiteAccessToken(password);
-  if (suppliedToken && constantTimeEqual(suppliedToken, expectedToken)) return NextResponse.next();
+  const email = suppliedToken ? await readSiteAccessToken(suppliedToken, password) : null;
+  if (email) {
+    const requestHeaders = new Headers(request.headers);
+    requestHeaders.set(SITE_IDENTITY_HEADER, email);
+    return NextResponse.next({ request: { headers: requestHeaders } });
+  }
 
   if (pathname.startsWith("/api/")) {
     return NextResponse.json({ message: "Unlock the site to continue" }, { status: 401 });

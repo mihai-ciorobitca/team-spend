@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import { getChatGPTUser } from "./chatgpt-auth";
 import { SpendingTracker } from "./spending-tracker";
 
 export const dynamic = "force-dynamic";
@@ -9,15 +8,6 @@ export const metadata: Metadata = {
   description: "Capture team expenses and receipt proof in seconds.",
 };
 
-export default async function Home() {
-  const user = await getChatGPTUser();
-
-  return (
-    <SpendingTracker
-      viewer={{
-        name: user?.displayName ?? "Shared access",
-        email: user?.email ?? "shared@peptiking.local",
-      }}
-    />
-  );
+export default function Home() {
+  return <SpendingTracker />;
 }
