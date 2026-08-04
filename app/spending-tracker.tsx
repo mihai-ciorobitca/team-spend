@@ -618,7 +618,7 @@ function HomeDashboard({ expenses, members, settings, currentMember, totalSpend,
         <article className="hero-card">
           <p className="hero-label">Total {settings.currency} team spend</p>
           <h2 className="hero-amount">{formatMoney(totalSpend, settings.currency)}</h2>
-          <div className="hero-meta"><span className="hero-meta-dot" /><span>{displayExpenses.length} {settings.currency} expense{displayExpenses.length === 1 ? "" : "s"}</span></div>
+          <div className="hero-meta"><span className="hero-meta-dot" /><span>{displayExpenses.length} expense{displayExpenses.length === 1 ? "" : "s"} in {settings.currency}</span></div>
           <div className="hero-insight"><strong>{activeMembers}</strong><span>active member{activeMembers === 1 ? "" : "s"}</span></div>
         </article>
         <div className="mini-grid">
@@ -651,7 +651,7 @@ function HomeDashboard({ expenses, members, settings, currentMember, totalSpend,
             })}
             {!categories.length && <div className="category-empty">Categories will appear after the first expense.</div>}
           </div>
-          <div className="category-footnote"><span className="proof-dot" />{expensesWithProof} {settings.currency} expense{expensesWithProof === 1 ? "" : "s"} with proof</div>
+          <div className="category-footnote"><span className="proof-dot" />{expensesWithProof} expense{expensesWithProof === 1 ? "" : "s"} in {settings.currency} with proof</div>
         </article>
 
         <article className="expense-panel">
@@ -688,7 +688,7 @@ function ActivityView({ expenses, members, settings, search, categoryFilter, onS
         {["All", ...CATEGORIES].map((category) => <button key={category} className={`filter-chip ${categoryFilter === category ? "active" : ""}`} onClick={() => onFilter(category)}>{category}</button>)}
       </div>
       <section className="expense-panel">
-        <div className="section-head"><div><h2>{categoryFilter === "All" ? "All spending" : categoryFilter}</h2><p>{expenses.length} expense{expenses.length === 1 ? "" : "s"}{settings.currencies.length > 1 ? ` · ${settings.currency} total` : ""}</p></div><strong>{formatMoney(expenses.filter((item) => item.currency === settings.currency).reduce((sum, item) => sum + item.amount, 0), settings.currency)}</strong></div>
+        <div className="section-head"><div><h2>{categoryFilter === "All" ? "All spending" : categoryFilter}</h2><p>{expenses.length} expense{expenses.length === 1 ? "" : "s"}{settings.currencies.length > 1 ? ` · total in ${settings.currency}` : ""}</p></div><strong>{formatMoney(expenses.filter((item) => item.currency === settings.currency).reduce((sum, item) => sum + item.amount, 0), settings.currency)}</strong></div>
         <ExpenseList expenses={expenses} members={members} settings={settings} currentMember={currentMember} onReportExpense={onReportExpense} onDeleteExpense={onDeleteExpense} onViewProof={onViewProof} />
       </section>
     </>
