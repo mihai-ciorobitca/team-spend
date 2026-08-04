@@ -689,7 +689,7 @@ function ExpenseList({ expenses, members, settings, currentMember, onReportExpen
               <div className="expense-number"><strong>{formatMoney(expense.amount, expense.currency)}</strong><span className="payment-label"><PaymentIcon size={12} strokeWidth={1.9} aria-hidden="true" />{PAYMENT_LABELS[expense.paymentMethod]}</span></div>
               <div className="expense-actions">
                 {expense.status === "issue" && <span className="issue-badge"><Flag size={12} aria-hidden="true" />Issue</span>}
-                {currentMember.role === "admin" ? <button type="button" className="expense-action danger" onClick={() => onDeleteExpense(expense.id)} aria-label={`Delete ${expense.merchant}`} title="Delete expense"><Trash2 size={15} aria-hidden="true" /></button> : expense.spenderId === currentMember.id && expense.status !== "issue" ? <button type="button" className="expense-action" onClick={() => onReportExpense(expense.id)} title="Report an issue"><Flag size={15} aria-hidden="true" /><span>Report issue</span></button> : null}
+                {currentMember.role === "admin" ? <button type="button" className="expense-action danger" onClick={() => onDeleteExpense(expense.id)} aria-label={`Delete ${expense.merchant}`} title="Delete expense"><Trash2 size={15} aria-hidden="true" /></button> : expense.spenderId === currentMember.id && expense.status !== "issue" ? <button type="button" className="expense-action report" onClick={() => onReportExpense(expense.id)} aria-label={`Report an issue with ${expense.merchant}`} title="Report an issue"><Flag size={15} aria-hidden="true" /><span>Report issue</span></button> : null}
               </div>
             </div>
           </div>

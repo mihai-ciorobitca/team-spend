@@ -2883,4 +2883,13 @@ body {
     justify-content: flex-end;
     margin-top: 6px;
   }
+
+  .expense-action.report {
+    width: 30px;
+    padding: 0;
+  }
+
+  .expense-action.report span {
+    display: none;
+  }
 }
