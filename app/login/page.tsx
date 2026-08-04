@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Image from "next/image";
+import { PasswordField } from "./password-field";
 
 export const metadata: Metadata = {
   title: { absolute: "Sign in to Peptiking" },
@@ -45,7 +46,7 @@ export default async function LoginPage({ searchParams }: {
             <label htmlFor="site-email">Email</label>
             <input id="site-email" name="email" type="email" inputMode="email" autoComplete="email" autoCapitalize="none" spellCheck={false} required placeholder="name@peptikingmedia.com" />
             <label htmlFor="site-password">Password</label>
-            <input id="site-password" name="password" type="password" autoComplete="current-password" required placeholder="Enter shared password" />
+            <PasswordField />
             {errorMessage && <p className="login-error" role="alert">{errorMessage}</p>}
             <button className="primary-button dark full" type="submit">Sign in</button>
           </form>
