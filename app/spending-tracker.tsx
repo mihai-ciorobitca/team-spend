@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useEffect, useMemo, useState, type CSSProperties } from "react";
+import { FormEvent, useEffect, useMemo, useRef, useState, type CSSProperties, type KeyboardEvent as ReactKeyboardEvent } from "react";
 
 type Tab = "home" | "activity" | "admin";
 type Role = "admin" | "member";
@@ -30,9 +30,7 @@ type Expense = {
 type TeamSettings = {
   teamName: string;
   currency: string;
-  monthlyBudget: number;
   requireProof: boolean;
-  approvalThreshold: number;
 };
 
 type BootstrapPayload = {
@@ -65,12 +63,18 @@ const DEMO_EXPENSES: Expense[] = [
 const DEFAULT_SETTINGS: TeamSettings = {
   teamName: "Northstar Studio",
   currency: "THB",
-  monthlyBudget: 60000,
   requireProof: true,
-  approvalThreshold: 5000,
 };
 
 const CATEGORIES = ["Meals", "Transport", "Software", "Supplies", "Utilities", "Travel", "Other"];
+const CURRENCY_OPTIONS = [
+  { value: "THB", label: "Thai baht (THB)" },
+  { value: "VND", label: "Vietnamese đồng (VND)" },
+  { value: "EUR", label: "Euro (EUR)" },
+  { value: "USD", label: "US dollar (USD)" },
+  { value: "GBP", label: "British pound (GBP)" },
+  { value: "SGD", label: "Singapore dollar (SGD)" },
+];
 const CATEGORY_SYMBOLS: Record<string, string> = {
   Meals: "M",
   Transport: "T",
@@ -102,12 +106,106 @@ function avatarStyle(color: string): CSSProperties {
 }
 
 function formatMoney(amount: number, currency: string, compact = false) {
-  return new Intl.NumberFormat("en-US", {
+  const locale = currency === "VND" ? "vi-VN" : currency === "THB" ? "th-TH" : "en-US";
+  return new Intl.NumberFormat(locale, {
     style: "currency",
     currency,
     notation: compact ? "compact" : "standard",
     maximumFractionDigits: amount % 1 === 0 ? 0 : 2,
   }).format(amount);
+}
+
+type DropdownOption = {
+  value: string;
+  label: string;
+};
+
+function Dropdown({ id, value, options, onChange }: {
+  id: string;
+  value: string;
+  options: DropdownOption[];
+  onChange: (value: string) => void;
+}) {
+  const rootRef = useRef<HTMLDivElement>(null);
+  const selectedIndex = Math.max(0, options.findIndex((option) => option.value === value));
+  const [open, setOpen] = useState(false);
+  const [activeIndex, setActiveIndex] = useState(selectedIndex);
+
+  useEffect(() => {
+    const closeOnOutsidePress = (event: PointerEvent) => {
+      if (!rootRef.current?.contains(event.target as Node)) setOpen(false);
+    };
+    document.addEventListener("pointerdown", closeOnOutsidePress);
+    return () => document.removeEventListener("pointerdown", closeOnOutsidePress);
+  }, []);
+
+  useEffect(() => {
+    if (open) setActiveIndex(selectedIndex);
+  }, [open, selectedIndex]);
+
+  const choose = (index: number) => {
+    onChange(options[index].value);
+    setOpen(false);
+  };
+
+  const handleKeyDown = (event: ReactKeyboardEvent<HTMLButtonElement>) => {
+    if (event.key === "ArrowDown" || event.key === "ArrowUp") {
+      event.preventDefault();
+      if (!open) {
+        setOpen(true);
+        return;
+      }
+      const direction = event.key === "ArrowDown" ? 1 : -1;
+      setActiveIndex((current) => (current + direction + options.length) % options.length);
+    } else if ((event.key === "Enter" || event.key === " ") && open) {
+      event.preventDefault();
+      choose(activeIndex);
+    } else if (event.key === "Escape") {
+      event.preventDefault();
+      setOpen(false);
+    } else if (event.key === "Tab") {
+      setOpen(false);
+    }
+  };
+
+  return (
+    <div className={`select-control ${open ? "open" : ""}`} ref={rootRef}>
+      <button
+        id={id}
+        type="button"
+        className="select-trigger"
+        role="combobox"
+        aria-haspopup="listbox"
+        aria-expanded={open}
+        aria-controls={`${id}-listbox`}
+        aria-activedescendant={open ? `${id}-option-${options[activeIndex].value}` : undefined}
+        onClick={() => setOpen((current) => !current)}
+        onKeyDown={handleKeyDown}
+      >
+        <span className="select-value">{options[selectedIndex]?.label}</span>
+        <span className="select-chevron" aria-hidden="true" />
+      </button>
+      {open && (
+        <div className="select-menu" id={`${id}-listbox`} role="listbox" aria-label="Choose an option">
+          {options.map((option, index) => (
+            <button
+              key={option.value}
+              id={`${id}-option-${option.value}`}
+              type="button"
+              role="option"
+              aria-selected={option.value === value}
+              className={`select-option ${index === activeIndex ? "active" : ""}`}
+              onPointerMove={() => setActiveIndex(index)}
+              onClick={() => choose(index)}
+            >
+              <span>{option.label}</span>
+              {option.value === value && <span className="select-check" aria-hidden="true">✓</span>}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
 }
 
 function displayDate(date: string) {
@@ -359,7 +457,8 @@ function HomeDashboard({ currentMember, expenses, members, settings, totalSpend,
   onAdd: () => void;
   onViewAll: () => void;
 }) {
-  const budgetPercent = Math.min(100, Math.round((totalSpend / settings.monthlyBudget) * 100));
+  const activeMembers = members.filter((member) => member.status === "active").length;
+  const expensesWithProof = expenses.filter((expense) => expense.proofUrl).length;
   const categories = CATEGORIES.map((category) => ({
     category,
     amount: expenses.filter((expense) => expense.category === category).reduce((sum, expense) => sum + expense.amount, 0),
@@ -380,8 +479,8 @@ function HomeDashboard({ currentMember, expenses, members, settings, totalSpend,
         <article className="hero-card">
           <p className="hero-label">Total team spend</p>
           <h2 className="hero-amount">{formatMoney(totalSpend, settings.currency)}</h2>
-          <div className="hero-meta"><span>↗</span><span>12% below last month</span></div>
-          <div className="hero-budget"><strong>{budgetPercent}%</strong><span>of monthly budget</span></div>
+          <div className="hero-meta"><span className="hero-meta-dot" /><span>{expenses.length} recorded expense{expenses.length === 1 ? "" : "s"}</span></div>
+          <div className="hero-insight"><strong>{activeMembers}</strong><span>active member{activeMembers === 1 ? "" : "s"}</span></div>
         </article>
         <div className="mini-grid">
           <article className="stat-card">
@@ -399,9 +498,7 @@ function HomeDashboard({ currentMember, expenses, members, settings, totalSpend,
 
       <section className="dashboard-grid">
         <article className="card">
-          <div className="section-head"><div><h2>Monthly budget</h2><p>Across the whole team</p></div><strong>{budgetPercent}%</strong></div>
-          <div className="budget-track"><div className="budget-fill" style={{ width: `${budgetPercent}%` }} /></div>
-          <div className="budget-values"><span>{formatMoney(totalSpend, settings.currency)} spent</span><span>{formatMoney(settings.monthlyBudget - totalSpend, settings.currency)} left</span></div>
+          <div className="section-head"><div><h2>Spending by category</h2><p>Current month distribution</p></div><strong>{formatMoney(totalSpend, settings.currency, true)}</strong></div>
           <div className="category-list">
             {categories.map((item) => (
               <div className="category-row" key={item.category}>
@@ -410,7 +507,9 @@ function HomeDashboard({ currentMember, expenses, members, settings, totalSpend,
                 <span className="category-amount">{formatMoney(item.amount, settings.currency)}</span>
               </div>
             ))}
+            {!categories.length && <div className="category-empty">Categories will appear after the first expense.</div>}
           </div>
+          <div className="category-footnote"><span className="proof-dot" />{expensesWithProof} expense{expensesWithProof === 1 ? "" : "s"} with proof</div>
         </article>
 
         <article className="expense-panel">
@@ -537,7 +636,7 @@ function ExpenseModal({ members, settings, currentMember, onClose, onSubmit }: {
           <div className="field"><span className="field-label">Who spent it?</span><div className="member-picker">{members.map((member) => <button key={member.id} type="button" className={`member-pill ${value.spenderId === member.id ? "active" : ""}`} onClick={() => setValue({ ...value, spenderId: member.id })}><span className="avatar small" style={avatarStyle(member.avatarColor)}>{initials(member.name)}</span><span>{member.name.split(" ")[0]}</span></button>)}</div></div>
           <div className="field-grid two">
             <div className="field"><label htmlFor="merchant">Merchant or reason</label><input id="merchant" value={value.merchant} onChange={(event) => setValue({ ...value, merchant: event.target.value })} placeholder="e.g. Taxi to client" /></div>
-            <div className="field"><label htmlFor="category">Category</label><select id="category" value={value.category} onChange={(event) => setValue({ ...value, category: event.target.value })}>{CATEGORIES.map((category) => <option key={category}>{category}</option>)}</select></div>
+            <div className="field"><label htmlFor="category">Category</label><Dropdown id="category" value={value.category} options={CATEGORIES.map((category) => ({ value: category, label: category }))} onChange={(category) => setValue({ ...value, category })} /></div>
             <div className="field"><label htmlFor="spentAt">Date</label><input id="spentAt" type="date" value={value.spentAt} onChange={(event) => setValue({ ...value, spentAt: event.target.value })} /></div>
             <div className="field"><label htmlFor="notes">Note <span className="muted">(optional)</span></label><input id="notes" value={value.notes} onChange={(event) => setValue({ ...value, notes: event.target.value })} placeholder="What was this for?" /></div>
           </div>
@@ -597,7 +696,7 @@ function AdminView({ configured, members, settings, currentMember, onMembersChan
         const payload = (await response.json()) as { message?: string };
         if (!response.ok) throw new Error(payload.message ?? "Could not save settings");
       }
-      onToast(configured ? "Platform settings saved." : "Demo settings updated.");
+      onToast(configured ? "Workspace settings saved." : "Demo settings updated.");
     } catch (caught) {
       onToast(caught instanceof Error ? caught.message : "Could not save settings");
     } finally {
@@ -619,19 +718,18 @@ function AdminView({ configured, members, settings, currentMember, onMembersChan
           <p className="divider-label">Add a member</p>
           <form className="settings-form" onSubmit={addMember}>
             <div className="field-grid two"><div className="field"><label htmlFor="member-name">Full name</label><input id="member-name" value={name} onChange={(event) => setName(event.target.value)} placeholder="Team member" /></div><div className="field"><label htmlFor="member-email">Work email</label><input id="member-email" type="email" value={email} onChange={(event) => setEmail(event.target.value)} placeholder="name@company.com" /></div></div>
-            <div className="field"><label htmlFor="member-role">Role</label><select id="member-role" value={role} onChange={(event) => setRole(event.target.value as Role)}><option value="member">Member — add and view spending</option><option value="admin">Admin — manage the platform</option></select></div>
+            <div className="field"><label htmlFor="member-role">Role</label><Dropdown id="member-role" value={role} options={[{ value: "member", label: "Member — add and view spending" }, { value: "admin", label: "Admin — manage the workspace" }]} onChange={(nextRole) => setRole(nextRole as Role)} /></div>
             <button className="secondary-button full" disabled={adding}>{adding ? "Adding…" : "＋ Add team member"}</button>
           </form>
         </section>
 
         <section className="admin-card">
-          <div className="section-head"><div><h2>Platform settings</h2><p>Defaults for every new expense</p></div></div>
+          <div className="section-head"><div><h2>Workspace settings</h2><p>Team-wide preferences</p></div></div>
           {!configured && <div className="setup-box"><h3>Connect Supabase to go live</h3><p>The interface is running with demo data. Your private proof bucket and team tables are already prepared in the project.</p><ol className="setup-steps"><li><span className="step-number">1</span>Run the included schema in Supabase</li><li><span className="step-number">2</span>Add the project URL and service key</li><li><span className="step-number">3</span>Refresh — your first admin is created</li></ol></div>}
           <div className="settings-form" style={{ marginTop: 18 }}>
             <div className="field"><label htmlFor="team-name">Team name</label><input id="team-name" value={settings.teamName} onChange={(event) => onSettingsChange({ ...settings, teamName: event.target.value })} /></div>
-            <div className="field-grid two"><div className="field"><label htmlFor="currency">Currency</label><select id="currency" value={settings.currency} onChange={(event) => onSettingsChange({ ...settings, currency: event.target.value })}><option>THB</option><option>USD</option><option>EUR</option><option>GBP</option><option>SGD</option></select></div><div className="field"><label htmlFor="budget">Monthly budget</label><input id="budget" inputMode="numeric" type="number" min="0" value={settings.monthlyBudget} onChange={(event) => onSettingsChange({ ...settings, monthlyBudget: Number(event.target.value) })} /></div></div>
-            <div className="field"><label htmlFor="threshold">Approval threshold</label><input id="threshold" inputMode="numeric" type="number" min="0" value={settings.approvalThreshold} onChange={(event) => onSettingsChange({ ...settings, approvalThreshold: Number(event.target.value) })} /></div>
-            <div className="toggle-row"><div className="toggle-copy"><strong>Require proof of spending</strong><span>Receipt photo or payment screenshot</span></div><button type="button" className={`toggle ${settings.requireProof ? "on" : ""}`} onClick={() => onSettingsChange({ ...settings, requireProof: !settings.requireProof })} aria-label="Toggle required proof" aria-pressed={settings.requireProof} /></div>
+            <div className="field"><label htmlFor="currency">Currency</label><Dropdown id="currency" value={settings.currency} options={CURRENCY_OPTIONS} onChange={(currency) => onSettingsChange({ ...settings, currency })} /></div>
+            <div className="toggle-row"><div className="toggle-copy"><strong>Require proof of spending</strong><span>Receipt photo or payment screenshot</span></div><div className="toggle-action"><span>{settings.requireProof ? "Required" : "Optional"}</span><button type="button" className={`toggle ${settings.requireProof ? "on" : ""}`} onClick={() => onSettingsChange({ ...settings, requireProof: !settings.requireProof })} aria-label="Toggle required proof" aria-pressed={settings.requireProof} /></div></div>
             <button className="primary-button dark full" onClick={saveSettings} disabled={saving}>{saving ? "Saving…" : "Save settings"}</button>
           </div>
         </section>

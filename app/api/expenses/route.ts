@@ -25,7 +25,7 @@ export async function POST(request: Request) {
     const proof = form.get("proof");
 
     if (!merchant || merchant.length > 160) return Response.json({ message: "Add a shorter merchant or reason" }, { status: 400 });
-    if (!Number.isFinite(amount) || amount <= 0 || amount > 100_000_000) return Response.json({ message: "Enter a valid amount" }, { status: 400 });
+    if (!Number.isFinite(amount) || amount <= 0 || amount > 999_999_999_999) return Response.json({ message: "Enter a valid amount" }, { status: 400 });
     if (!CATEGORIES.has(category)) return Response.json({ message: "Choose a valid category" }, { status: 400 });
     if (!METHODS.has(paymentMethod)) return Response.json({ message: "Choose a valid payment method" }, { status: 400 });
     if (!/^\d{4}-\d{2}-\d{2}$/.test(spentAt)) return Response.json({ message: "Choose a valid spending date" }, { status: 400 });
@@ -59,7 +59,7 @@ export async function POST(request: Request) {
         proof_path: uploadedPath,
         proof_name: file?.name ?? null,
         proof_type: file?.type ?? null,
-        status: amount >= Number(team.approval_threshold) ? "pending" : "logged",
+        status: "logged",
       }),
     });
     if (!rows[0]) throw new Error("Expense was not returned after saving");

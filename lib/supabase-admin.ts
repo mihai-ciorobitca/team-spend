@@ -12,9 +12,7 @@ type SupabaseTeamRow = {
   id: string;
   name: string;
   currency: string;
-  monthly_budget: number | string;
   require_proof: boolean;
-  approval_threshold: number | string;
 };
 
 type SupabaseExpenseRow = {
@@ -41,9 +39,7 @@ export type Member = {
 export type TeamSettings = {
   teamName: string;
   currency: string;
-  monthlyBudget: number;
   requireProof: boolean;
-  approvalThreshold: number;
 };
 
 export type Expense = {
@@ -153,7 +149,7 @@ export async function requireMember(request: Request): Promise<SupabaseMemberRow
     const createdTeams = await supabaseRequest<SupabaseTeamRow[]>("/rest/v1/teams?select=*", {
       method: "POST",
       headers: { Prefer: "return=representation" },
-      body: JSON.stringify({ name: "My Team", currency: "THB", monthly_budget: 60000, require_proof: true, approval_threshold: 5000 }),
+      body: JSON.stringify({ name: "My Team", currency: "THB", require_proof: true }),
     });
     team = createdTeams[0];
   }
@@ -190,9 +186,7 @@ export function mapSettings(row: SupabaseTeamRow): TeamSettings {
   return {
     teamName: row.name,
     currency: row.currency,
-    monthlyBudget: Number(row.monthly_budget),
     requireProof: row.require_proof,
-    approvalThreshold: Number(row.approval_threshold),
   };
 }
 
