@@ -64,6 +64,7 @@ export type Expense = {
   spentAt: string;
   spenderId: string;
   proofUrl: string | null;
+  proofType: string | null;
   notes: string;
   status: "logged" | "issue";
 };
@@ -250,6 +251,7 @@ export function mapExpense(row: SupabaseExpenseRow, proofUrl: string | null = ro
     spentAt: row.spent_at,
     spenderId: row.spender_id,
     proofUrl,
+    proofType: row.proof_type,
     notes: row.notes ?? "",
     status: row.status === "issue" ? "issue" : "logged",
   };

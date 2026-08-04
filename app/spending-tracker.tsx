@@ -61,6 +61,7 @@ type Expense = {
   spentAt: string;
   spenderId: string;
   proofUrl?: string | null;
+  proofType?: string | null;
   notes?: string;
   status?: "logged" | "issue";
 };
@@ -338,7 +339,7 @@ export function SpendingTracker() {
 
   const addExpense = async (form: ExpenseFormValue) => {
     if (!configured) {
-      const preview = form.proof && form.proof.type.startsWith("image/") ? URL.createObjectURL(form.proof) : "proof";
+      const preview = form.proof ? URL.createObjectURL(form.proof) : "proof";
       const nextExpense: Expense = {
         id: `demo-${Date.now()}`,
         merchant: form.merchant,
@@ -350,6 +351,7 @@ export function SpendingTracker() {
         spenderId: form.spenderId,
         notes: form.notes,
         proofUrl: preview,
+        proofType: form.proof?.type ?? null,
       };
       setExpenses((current) => [nextExpense, ...current]);
       setAddOpen(false);
@@ -368,12 +370,23 @@ export function SpendingTracker() {
     body.set("notes", form.notes);
     if (form.proof) body.set("proof", form.proof);
 
-    const response = await fetch("/api/expenses", { method: "POST", body });
-    const payload = (await response.json()) as { expense?: Expense; message?: string };
-    if (!response.ok || !payload.expense) throw new Error(payload.message ?? "Could not save expense");
-    setExpenses((current) => [payload.expense!, ...current]);
+    const optimisticId = `pending-${Date.now()}`;
+    const preview = form.proof ? URL.createObjectURL(form.proof) : null;
+    const optimisticExpense: Expense = { id: optimisticId, merchant: form.merchant, amount: Number(form.amount), currency: form.currency, category: form.category, paymentMethod: form.paymentMethod, spentAt: form.spentAt, spenderId: form.spenderId, notes: form.notes, proofUrl: preview, proofType: form.proof?.type ?? null };
+    setExpenses((current) => [optimisticExpense, ...current]);
     setAddOpen(false);
-    showToast("Expense saved and proof uploaded.");
+    showToast("Expense saved.");
+    void fetch("/api/expenses", { method: "POST", body })
+      .then(async (response) => {
+        const payload = (await response.json()) as { expense?: Expense; message?: string };
+        if (!response.ok || !payload.expense) throw new Error(payload.message ?? "Could not save expense");
+        setExpenses((current) => current.map((expense) => expense.id === optimisticId ? payload.expense! : expense));
+      })
+      .catch((error: unknown) => {
+        setExpenses((current) => current.filter((expense) => expense.id !== optimisticId));
+        if (preview) URL.revokeObjectURL(preview);
+        showToast(error instanceof Error ? `Expense was not saved: ${error.message}` : "Expense was not saved.");
+      });
   };
 
   const reportExpense = async (expenseId: string) => {
@@ -412,8 +425,12 @@ export function SpendingTracker() {
   };
 
   const viewProof = async (expense: Expense) => {
+    if (expense.proofUrl?.startsWith("blob:") || expense.proofUrl?.startsWith("http")) {
+      setProofViewer({ expense, url: expense.proofUrl, contentType: expense.proofType ?? "image/*" });
+      return;
+    }
     if (!configured) {
-      if (expense.proofUrl?.startsWith("blob:")) setProofViewer({ expense, url: expense.proofUrl, contentType: "image/*" });
+      if (expense.proofUrl?.startsWith("blob:")) setProofViewer({ expense, url: expense.proofUrl, contentType: expense.proofType ?? "image/*" });
       else showToast("Connect Supabase to open stored receipt proofs.");
       return;
     }
@@ -421,7 +438,9 @@ export function SpendingTracker() {
       const response = await fetch(`/api/proofs/${encodeURIComponent(expense.id)}`);
       const payload = (await response.json()) as { url?: string; contentType?: string; message?: string };
       if (!response.ok || !payload.url) throw new Error(payload.message ?? "Could not open proof");
-      setProofViewer({ expense, url: payload.url, contentType: payload.contentType ?? "image/*" });
+      const updatedExpense = { ...expense, proofUrl: payload.url, proofType: payload.contentType ?? "image/*" };
+      setExpenses((current) => current.map((item) => item.id === expense.id ? updatedExpense : item));
+      setProofViewer({ expense: updatedExpense, url: payload.url, contentType: updatedExpense.proofType ?? "image/*" });
     } catch (error) {
       showToast(error instanceof Error ? error.message : "Could not open proof");
     }

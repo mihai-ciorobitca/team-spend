@@ -42,12 +42,9 @@ export async function POST(request: Request) {
     if (file && file.size > 10 * 1024 * 1024) return Response.json({ message: "Proof must be smaller than 10 MB" }, { status: 400 });
     if (file && !(file.type.startsWith("image/") || file.type === "application/pdf")) return Response.json({ message: "Proof must be an image or PDF" }, { status: 400 });
 
-    if (file) {
-      uploadedPath = `${current.team_id}/${spentAt.slice(0, 7)}/${crypto.randomUUID()}-${safeFileName(file.name)}`;
-      await uploadProof(uploadedPath, file);
-    }
+    if (file) uploadedPath = `${current.team_id}/${spentAt.slice(0, 7)}/${crypto.randomUUID()}-${safeFileName(file.name)}`;
 
-    const rows = await supabaseRequest<Array<Parameters<typeof mapExpense>[0]>>("/rest/v1/expenses?select=*", {
+    const createExpense = supabaseRequest<Array<Parameters<typeof mapExpense>[0]>>("/rest/v1/expenses?select=*", {
       method: "POST",
       headers: { Prefer: "return=representation" },
       body: JSON.stringify({
@@ -67,6 +64,20 @@ export async function POST(request: Request) {
         status: "logged",
       }),
     });
+    const [expenseResult, uploadResult] = await Promise.allSettled([
+      createExpense,
+      file && uploadedPath ? uploadProof(uploadedPath, file) : Promise.resolve(),
+    ]);
+    if (expenseResult.status === "rejected" || uploadResult.status === "rejected") {
+      if (expenseResult.status === "fulfilled" && expenseResult.value[0]) {
+        await supabaseRequest(`/rest/v1/expenses?id=eq.${encodeURIComponent(expenseResult.value[0].id)}`, { method: "DELETE" }).catch(() => undefined);
+      }
+      if (uploadedPath) await deleteProof(uploadedPath).catch(() => undefined);
+      if (expenseResult.status === "rejected") throw expenseResult.reason;
+      if (uploadResult.status === "rejected") throw uploadResult.reason;
+      throw new Error("Expense could not be saved");
+    }
+    const rows = expenseResult.value;
     if (!rows[0]) throw new Error("Expense was not returned after saving");
     return Response.json({ expense: mapExpense(rows[0], uploadedPath ? "attached" : null) }, { status: 201 });
   } catch (error) {
