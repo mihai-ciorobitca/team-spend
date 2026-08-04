@@ -908,17 +908,17 @@ textarea:focus-visible {
 }
 
 .select-chevron {
-  width: 9px;
-  height: 9px;
+  width: 18px;
+  height: 18px;
   flex: 0 0 auto;
-  border-right: 2px solid var(--ink-soft);
-  border-bottom: 2px solid var(--ink-soft);
-  transform: rotate(45deg) translateY(-2px);
+  border: 0;
+  color: var(--ink-soft);
+  transform: none;
   transition: transform 160ms ease;
 }
 
 .select-control.open .select-chevron {
-  transform: rotate(225deg) translate(-2px, -1px);
+  transform: rotate(180deg);
 }
 
 .select-menu {
@@ -988,7 +988,11 @@ textarea:focus-visible {
 }
 
 .segment-button {
+  display: inline-flex;
   min-height: 48px;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
   border: 1px solid var(--line);
   border-radius: 14px;
   background: white;
@@ -2654,38 +2658,81 @@ body {
   color: var(--teal);
 }
 
-.password-eye {
-  position: relative;
-  display: block;
+/* One consistent Lucide icon system across the product. */
+.sidebar-button > svg {
+  width: 18px;
+  height: 18px;
+  flex: 0 0 auto;
+  color: #8a95a7;
+}
+
+.sidebar-button.active > svg {
+  color: var(--teal);
+}
+
+.nav-button > svg {
   width: 19px;
-  height: 13px;
-  border: 2px solid currentColor;
-  border-radius: 55% 45% 55% 45%;
-  transform: rotate(45deg);
+  height: 19px;
 }
 
-.password-eye::after {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  width: 5px;
-  height: 5px;
-  border-radius: 50%;
-  background: currentColor;
-  content: "";
-  transform: translate(-50%, -50%);
+.nav-add {
+  display: grid;
+  place-items: center;
 }
 
-.password-eye.visible::before {
-  position: absolute;
-  z-index: 1;
-  top: 50%;
-  left: 50%;
-  width: 24px;
-  height: 2px;
-  border-radius: 999px;
-  background: white;
-  box-shadow: 0 0 0 1px white;
-  content: "";
-  transform: translate(-50%, -50%);
+.nav-add > svg {
+  width: 22px;
+  height: 22px;
+  stroke-width: 1.9;
+}
+
+.stat-icon svg,
+.category-dot svg,
+.expense-icon svg,
+.search-box > svg {
+  flex: 0 0 auto;
+}
+
+.search-box > svg {
+  color: var(--ink-soft);
+}
+
+.payment-label,
+.icon-text-button,
+.sign-out-link,
+.demo-banner button {
+  display: inline-flex;
+  align-items: center;
+}
+
+.payment-label {
+  justify-content: flex-end;
+  gap: 4px;
+}
+
+.icon-text-button,
+.sign-out-link,
+.demo-banner button {
+  gap: 6px;
+}
+
+.close-button {
+  display: grid;
+  place-items: center;
+}
+
+.proof-upload-icon {
+  display: block;
+  margin: 0 auto;
+  color: var(--teal);
+}
+
+.login-lock::before,
+.login-lock > span {
+  display: none;
+  content: none;
+}
+
+.login-lock svg {
+  color: var(--orange);
 }

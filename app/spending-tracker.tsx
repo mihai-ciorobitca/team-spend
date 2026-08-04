@@ -3,6 +3,34 @@
 import Image from "next/image";
 import { FormEvent, useEffect, useMemo, useRef, useState, type CSSProperties, type KeyboardEvent as ReactKeyboardEvent } from "react";
 import { createPortal } from "react-dom";
+import {
+  ArrowRight,
+  Banknote,
+  Camera,
+  Car,
+  Check,
+  ChevronDown,
+  CircleEllipsis,
+  Code2,
+  CreditCard,
+  Database,
+  FileUp,
+  Globe2,
+  LayoutDashboard,
+  LogOut,
+  Package,
+  Plane,
+  Plus,
+  ReceiptText,
+  Save,
+  Search,
+  Settings,
+  Smartphone,
+  Utensils,
+  X,
+  Zap,
+  type LucideIcon,
+} from "lucide-react";
 
 type Tab = "home" | "activity" | "admin";
 type Role = "admin" | "member";
@@ -73,14 +101,14 @@ const CURRENCY_OPTIONS = [
   { value: "EUR", label: "Euro (EUR)" },
   { value: "VND", label: "Vietnamese đồng (VND)" },
 ];
-const CATEGORY_SYMBOLS: Record<string, string> = {
-  Meals: "M",
-  Transport: "T",
-  Software: "S",
-  Supplies: "P",
-  Utilities: "U",
-  Travel: "A",
-  Other: "•",
+const CATEGORY_ICONS: Record<string, LucideIcon> = {
+  Meals: Utensils,
+  Transport: Car,
+  Software: Code2,
+  Supplies: Package,
+  Utilities: Zap,
+  Travel: Plane,
+  Other: CircleEllipsis,
 };
 
 const PAYMENT_LABELS: Record<PaymentMethod, string> = {
@@ -88,6 +116,13 @@ const PAYMENT_LABELS: Record<PaymentMethod, string> = {
   card: "Card",
   bank_transfer: "Online",
   wallet: "Phone app",
+};
+
+const PAYMENT_ICONS: Record<PaymentMethod, LucideIcon> = {
+  cash: Banknote,
+  card: CreditCard,
+  bank_transfer: Globe2,
+  wallet: Smartphone,
 };
 
 function initials(name: string) {
@@ -181,7 +216,7 @@ function Dropdown({ id, value, options, onChange }: {
         onKeyDown={handleKeyDown}
       >
         <span className="select-value">{options[selectedIndex]?.label}</span>
-        <span className="select-chevron" aria-hidden="true" />
+        <ChevronDown className="select-chevron" size={18} strokeWidth={1.8} aria-hidden="true" />
       </button>
       {open && (
         <div className="select-menu" id={`${id}-listbox`} role="listbox" aria-label="Choose an option">
@@ -197,7 +232,7 @@ function Dropdown({ id, value, options, onChange }: {
               onClick={() => choose(index)}
             >
               <span>{option.label}</span>
-              {option.value === value && <span className="select-check" aria-hidden="true">✓</span>}
+              {option.value === value && <span className="select-check" aria-hidden="true"><Check size={14} strokeWidth={2.4} /></span>}
             </button>
           ))}
         </div>
@@ -348,7 +383,7 @@ export function SpendingTracker() {
           <div className="demo-banner">
             <span>Demo data</span>
             <span>·</span>
-            <button onClick={() => navigate("admin")}>Connect Supabase</button>
+            <button onClick={() => navigate("admin")}><Database size={14} aria-hidden="true" />Connect Supabase</button>
           </div>
         )}
 
@@ -422,13 +457,13 @@ function Sidebar({ tab, teamName, member, onNavigate }: {
     <aside className="sidebar">
       <div className="brand"><Image className="brand-symbol" src="/icon.png" alt="" width={40} height={40} priority /><span>Peptiking</span></div>
       <nav className="sidebar-nav" aria-label="Main navigation">
-        <NavButton desktop label="Overview" symbol="⌂" active={tab === "home"} onClick={() => onNavigate("home")} />
-        <NavButton desktop label="Expenses" symbol="≋" active={tab === "activity"} onClick={() => onNavigate("activity")} />
-        {member.role === "admin" && <NavButton desktop label="Admin" symbol="⚙" active={tab === "admin"} onClick={() => onNavigate("admin")} />}
+        <NavButton desktop label="Overview" icon={LayoutDashboard} active={tab === "home"} onClick={() => onNavigate("home")} />
+        <NavButton desktop label="Expenses" icon={ReceiptText} active={tab === "activity"} onClick={() => onNavigate("activity")} />
+        {member.role === "admin" && <NavButton desktop label="Admin" icon={Settings} active={tab === "admin"} onClick={() => onNavigate("admin")} />}
       </nav>
       <div className="sidebar-account">
         <span className="avatar" style={avatarStyle(member.avatarColor)}>{initials(member.name)}</span>
-        <div><strong>{member.name}</strong><span>{member.role === "admin" ? "Administrator" : "Team member"} · {teamName}</span><a className="sign-out-link" href="/api/site-logout">Sign out</a></div>
+        <div><strong>{member.name}</strong><span>{member.role === "admin" ? "Administrator" : "Team member"} · {teamName}</span><a className="sign-out-link" href="/api/site-logout"><LogOut size={13} strokeWidth={1.9} />Sign out</a></div>
       </div>
     </aside>
   );
@@ -438,34 +473,34 @@ function MobileTopbar({ member }: { member: Member }) {
   return (
     <header className="mobile-topbar">
       <div className="brand"><Image className="brand-symbol" src="/icon.png" alt="" width={40} height={40} priority /><span>Peptiking</span></div>
-      <div className="mobile-account"><div><strong>{member.name}</strong><span>{member.role === "admin" ? "Admin" : "Member"}</span></div><span className="avatar" style={avatarStyle(member.avatarColor)}>{initials(member.name)}</span><a className="sign-out-link" href="/api/site-logout" aria-label="Sign out">Sign out</a></div>
+      <div className="mobile-account"><div><strong>{member.name}</strong><span>{member.role === "admin" ? "Admin" : "Member"}</span></div><span className="avatar" style={avatarStyle(member.avatarColor)}>{initials(member.name)}</span><a className="sign-out-link" href="/api/site-logout" aria-label="Sign out"><LogOut size={16} strokeWidth={1.9} /><span>Sign out</span></a></div>
     </header>
   );
 }
 
-function NavButton({ label, symbol, active, desktop, onClick }: { label: string; symbol: string; active: boolean; desktop?: boolean; onClick: () => void }) {
+function NavButton({ label, icon: Icon, active, desktop, onClick }: { label: string; icon: LucideIcon; active: boolean; desktop?: boolean; onClick: () => void }) {
   if (desktop) {
-    return <button className={`sidebar-button ${active ? "active" : ""}`} onClick={onClick}><span>{symbol}</span><span>{label}</span></button>;
+    return <button className={`sidebar-button ${active ? "active" : ""}`} onClick={onClick}><Icon aria-hidden="true" /><span>{label}</span></button>;
   }
-  return <button className={`nav-button ${active ? "active" : ""}`} onClick={onClick}><span>{symbol}</span><span>{label}</span></button>;
+  return <button className={`nav-button ${active ? "active" : ""}`} onClick={onClick}><Icon aria-hidden="true" /><span>{label}</span></button>;
 }
 
 function BottomNav({ tab, isAdmin, onNavigate, onAdd }: { tab: Tab; isAdmin: boolean; onNavigate: (tab: Tab) => void; onAdd: () => void }) {
   if (!isAdmin) {
     return (
       <nav className="bottom-nav member-nav" aria-label="Mobile navigation">
-        <NavButton label="Home" symbol="⌂" active={tab === "home"} onClick={() => onNavigate("home")} />
-        <button className="nav-add" onClick={onAdd} aria-label="Add expense">+</button>
-        <NavButton label="Expenses" symbol="≋" active={tab === "activity"} onClick={() => onNavigate("activity")} />
+        <NavButton label="Home" icon={LayoutDashboard} active={tab === "home"} onClick={() => onNavigate("home")} />
+        <button className="nav-add" onClick={onAdd} aria-label="Add expense"><Plus aria-hidden="true" /></button>
+        <NavButton label="Expenses" icon={ReceiptText} active={tab === "activity"} onClick={() => onNavigate("activity")} />
       </nav>
     );
   }
   return (
     <nav className="bottom-nav" aria-label="Mobile navigation">
-      <NavButton label="Home" symbol="⌂" active={tab === "home"} onClick={() => onNavigate("home")} />
-      <NavButton label="Expenses" symbol="≋" active={tab === "activity"} onClick={() => onNavigate("activity")} />
-      <button className="nav-add" onClick={onAdd} aria-label="Add expense">+</button>
-      <NavButton label="Admin" symbol="⚙" active={tab === "admin"} onClick={() => onNavigate("admin")} />
+      <NavButton label="Home" icon={LayoutDashboard} active={tab === "home"} onClick={() => onNavigate("home")} />
+      <NavButton label="Expenses" icon={ReceiptText} active={tab === "activity"} onClick={() => onNavigate("activity")} />
+      <button className="nav-add" onClick={onAdd} aria-label="Add expense"><Plus aria-hidden="true" /></button>
+      <NavButton label="Admin" icon={Settings} active={tab === "admin"} onClick={() => onNavigate("admin")} />
     </nav>
   );
 }
@@ -496,7 +531,7 @@ function HomeDashboard({ expenses, members, settings, currentMember, totalSpend,
           <h1 className="page-heading">Welcome, {currentMember.name.split(" ")[0]}.</h1>
           <p className="intro-copy">Your team has logged {expenses.length} expenses this month.</p>
         </div>
-        <button className="primary-button desktop-add" onClick={onAdd}><span>＋</span> Add expense</button>
+        <button className="primary-button desktop-add" onClick={onAdd}><Plus size={17} aria-hidden="true" />Add expense</button>
       </div>
 
       <section className="summary-grid" aria-label="Monthly spending summary">
@@ -508,12 +543,12 @@ function HomeDashboard({ expenses, members, settings, currentMember, totalSpend,
         </article>
         <div className="mini-grid">
           <article className="stat-card">
-            <span className="stat-icon">C</span>
+            <span className="stat-icon"><Banknote size={17} strokeWidth={1.9} aria-hidden="true" /></span>
             <span className="stat-label">Cash spending</span>
             <strong className="stat-value">{formatMoney(cashSpend, settings.currency)}</strong>
           </article>
           <article className="stat-card orange">
-            <span className="stat-icon">↗</span>
+            <span className="stat-icon"><Smartphone size={17} strokeWidth={1.9} aria-hidden="true" /></span>
             <span className="stat-label">Online & phone</span>
             <strong className="stat-value">{formatMoney(digitalSpend, settings.currency)}</strong>
           </article>
@@ -524,20 +559,23 @@ function HomeDashboard({ expenses, members, settings, currentMember, totalSpend,
         <article className="card">
           <div className="section-head"><div><h2>Spending by category</h2><p>Current month distribution</p></div><strong>{formatMoney(totalSpend, settings.currency, true)}</strong></div>
           <div className="category-list">
-            {categories.map((item) => (
+            {categories.map((item) => {
+              const CategoryIcon = CATEGORY_ICONS[item.category] ?? CircleEllipsis;
+              return (
               <div className="category-row" key={item.category}>
-                <span className="category-dot">{CATEGORY_SYMBOLS[item.category]}</span>
+                <span className="category-dot"><CategoryIcon size={16} strokeWidth={1.9} aria-hidden="true" /></span>
                 <div className="category-copy"><strong>{item.category}</strong><span>{Math.round((item.amount / totalSpend) * 100)}% of spend</span></div>
                 <span className="category-amount">{formatMoney(item.amount, settings.currency)}</span>
               </div>
-            ))}
+              );
+            })}
             {!categories.length && <div className="category-empty">Categories will appear after the first expense.</div>}
           </div>
           <div className="category-footnote"><span className="proof-dot" />{expensesWithProof} expense{expensesWithProof === 1 ? "" : "s"} with proof</div>
         </article>
 
         <article className="expense-panel">
-          <div className="section-head"><div><h2>Recent expenses</h2><p>Latest team activity</p></div><button className="text-button" onClick={onViewAll}>View all</button></div>
+          <div className="section-head"><div><h2>Recent expenses</h2><p>Latest team activity</p></div><button className="text-button icon-text-button" onClick={onViewAll}>View all<ArrowRight size={15} aria-hidden="true" /></button></div>
           <ExpenseList expenses={expenses.slice(0, 5)} members={members} settings={settings} />
         </article>
       </section>
@@ -559,9 +597,9 @@ function ActivityView({ expenses, members, settings, search, categoryFilter, onS
     <>
       <div className="tab-header">
         <div><p className="eyebrow">Team ledger</p><h1>Expenses</h1><p className="intro-copy">Every payment, person, and proof in one place.</p></div>
-        <button className="primary-button desktop-add" onClick={onAdd}>＋ Add expense</button>
+        <button className="primary-button desktop-add" onClick={onAdd}><Plus size={17} aria-hidden="true" />Add expense</button>
       </div>
-      <div className="search-box"><span>⌕</span><input aria-label="Search expenses" value={search} onChange={(event) => onSearch(event.target.value)} placeholder="Search merchant, category or person" /></div>
+      <div className="search-box"><Search size={17} strokeWidth={1.9} aria-hidden="true" /><input aria-label="Search expenses" value={search} onChange={(event) => onSearch(event.target.value)} placeholder="Search merchant, category or person" /></div>
       <div className="filter-row" aria-label="Expense categories">
         {["All", ...CATEGORIES].map((category) => <button key={category} className={`filter-chip ${categoryFilter === category ? "active" : ""}`} onClick={() => onFilter(category)}>{category}</button>)}
       </div>
@@ -579,14 +617,16 @@ function ExpenseList({ expenses, members, settings }: { expenses: Expense[]; mem
     <div className="expense-list">
       {expenses.map((expense) => {
         const member = members.find((candidate) => candidate.id === expense.spenderId);
+        const CategoryIcon = CATEGORY_ICONS[expense.category] ?? CircleEllipsis;
+        const PaymentIcon = PAYMENT_ICONS[expense.paymentMethod];
         return (
           <div className="expense-row" key={expense.id}>
-            <span className="expense-icon">{CATEGORY_SYMBOLS[expense.category] ?? "•"}</span>
+            <span className="expense-icon"><CategoryIcon size={16} strokeWidth={1.9} aria-hidden="true" /></span>
             <div className="expense-main">
               <p className="expense-title">{expense.merchant}</p>
               <p className="expense-subtitle"><span>{member?.name ?? "Team member"}</span><span>·</span><span>{displayDate(expense.spentAt)}</span>{expense.proofUrl && <><span>·</span><span className="proof-dot" title="Proof attached" /></>}</p>
             </div>
-            <div className="expense-number"><strong>{formatMoney(expense.amount, settings.currency)}</strong><span>{PAYMENT_LABELS[expense.paymentMethod]}</span></div>
+            <div className="expense-number"><strong>{formatMoney(expense.amount, settings.currency)}</strong><span className="payment-label"><PaymentIcon size={12} strokeWidth={1.9} aria-hidden="true" />{PAYMENT_LABELS[expense.paymentMethod]}</span></div>
           </div>
         );
       })}
@@ -656,15 +696,16 @@ function ExpenseModal({ members, settings, onClose, onSubmit }: {
   };
 
   const proofPrompt = value.paymentMethod === "cash" ? "Take a receipt photo" : "Add payment screenshot";
+  const ProofIcon = value.paymentMethod === "cash" ? Camera : FileUp;
 
   return createPortal(
     <div className="modal-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) onClose(); }}>
       <form className="expense-modal" onSubmit={submit} aria-label="Add expense" role="dialog" aria-modal="true">
-        <div className="modal-head"><div><p className="eyebrow">New spending</p><h2>Add an expense</h2></div><button type="button" className="close-button" onClick={onClose} aria-label="Close">×</button></div>
+        <div className="modal-head"><div><p className="eyebrow">New spending</p><h2>Add an expense</h2></div><button type="button" className="close-button" onClick={onClose} aria-label="Close"><X size={19} strokeWidth={1.9} aria-hidden="true" /></button></div>
         <label className="amount-field"><span>{settings.currency}</span><input autoFocus inputMode="decimal" placeholder="0" aria-label="Amount" value={value.amount} onChange={(event) => setValue({ ...value, amount: event.target.value })} /></label>
 
         <div className="field-grid">
-          <div className="field"><span className="field-label">How was it paid?</span><div className="segmented">{(Object.keys(PAYMENT_LABELS) as PaymentMethod[]).map((method) => <button key={method} type="button" className={`segment-button ${value.paymentMethod === method ? "active" : ""}`} onClick={() => setValue({ ...value, paymentMethod: method })}>{PAYMENT_LABELS[method]}</button>)}</div></div>
+          <div className="field"><span className="field-label">How was it paid?</span><div className="segmented">{(Object.keys(PAYMENT_LABELS) as PaymentMethod[]).map((method) => { const PaymentIcon = PAYMENT_ICONS[method]; return <button key={method} type="button" className={`segment-button ${value.paymentMethod === method ? "active" : ""}`} onClick={() => setValue({ ...value, paymentMethod: method })}><PaymentIcon size={16} strokeWidth={1.9} aria-hidden="true" />{PAYMENT_LABELS[method]}</button>; })}</div></div>
           <div className="field"><span className="field-label">Who spent it?</span><div className="member-picker">{members.map((member) => <button key={member.id} type="button" className={`member-pill ${value.spenderId === member.id ? "active" : ""}`} onClick={() => setValue({ ...value, spenderId: member.id })}><span className="avatar small" style={avatarStyle(member.avatarColor)}>{initials(member.name)}</span><span>{member.name.split(" ")[0]}</span></button>)}</div></div>
           <div className="field-grid two">
             <div className="field"><label htmlFor="merchant">Merchant or reason</label><input id="merchant" value={value.merchant} onChange={(event) => setValue({ ...value, merchant: event.target.value })} placeholder="e.g. Taxi to client" /></div>
@@ -672,11 +713,11 @@ function ExpenseModal({ members, settings, onClose, onSubmit }: {
             <div className="field"><label htmlFor="spentAt">Date</label><input id="spentAt" type="date" value={value.spentAt} onChange={(event) => setValue({ ...value, spentAt: event.target.value })} /></div>
             <div className="field"><label htmlFor="notes">Note <span className="muted">(optional)</span></label><input id="notes" value={value.notes} onChange={(event) => setValue({ ...value, notes: event.target.value })} placeholder="What was this for?" /></div>
           </div>
-          <div className="field"><span className="field-label">Proof of spending {settings.requireProof ? "· Required" : "· Optional"}</span><label className="proof-drop">{preview ? <img className="proof-preview" src={preview} alt="Selected receipt preview" /> : <div><span aria-hidden="true">▣</span><strong>{value.proof?.name ?? proofPrompt}</strong><span>{value.paymentMethod === "cash" ? "Use camera or choose a photo" : "Choose a screenshot from your phone"}</span></div>}<input type="file" accept="image/*,.pdf" capture={value.paymentMethod === "cash" ? "environment" : undefined} onChange={(event) => selectProof(event.target.files?.[0] ?? null)} />{value.proof && <span className="proof-change">Change</span>}</label></div>
+          <div className="field"><span className="field-label">Proof of spending {settings.requireProof ? "· Required" : "· Optional"}</span><label className="proof-drop">{preview ? <img className="proof-preview" src={preview} alt="Selected receipt preview" /> : <div><ProofIcon className="proof-upload-icon" size={24} strokeWidth={1.7} aria-hidden="true" /><strong>{value.proof?.name ?? proofPrompt}</strong><span>{value.paymentMethod === "cash" ? "Use camera or choose a photo" : "Choose a screenshot from your phone"}</span></div>}<input type="file" accept="image/*,.pdf" capture={value.paymentMethod === "cash" ? "environment" : undefined} onChange={(event) => selectProof(event.target.files?.[0] ?? null)} />{value.proof && <span className="proof-change">Change</span>}</label></div>
         </div>
 
         {error && <p role="alert" style={{ color: "#b64b2c", fontSize: 12, fontWeight: 750, margin: "12px 0 0" }}>{error}</p>}
-        <div className="modal-actions"><button type="button" className="secondary-button" onClick={onClose}>Cancel</button><button className="primary-button dark" disabled={saving}>{saving ? "Saving…" : "Save expense"}</button></div>
+        <div className="modal-actions"><button type="button" className="secondary-button" onClick={onClose}>Cancel</button><button className="primary-button dark" disabled={saving}>{!saving && <Save size={16} aria-hidden="true" />}{saving ? "Saving…" : "Save expense"}</button></div>
       </form>
     </div>,
     document.body,
@@ -753,7 +794,7 @@ function AdminView({ configured, members, settings, currentMember, onMembersChan
           <form className="settings-form" onSubmit={addMember}>
             <div className="field-grid two"><div className="field"><label htmlFor="member-name">Full name</label><input id="member-name" value={name} onChange={(event) => setName(event.target.value)} placeholder="Team member" /></div><div className="field"><label htmlFor="member-email">Email (for records)</label><input id="member-email" type="email" value={email} onChange={(event) => setEmail(event.target.value)} placeholder="name@company.com" /></div></div>
             <div className="field"><label htmlFor="member-role">Role</label><Dropdown id="member-role" value={role} options={[{ value: "member", label: "Member — add and view spending" }, { value: "admin", label: "Admin — manage the workspace" }]} onChange={(nextRole) => setRole(nextRole as Role)} /></div>
-            <button className="secondary-button full" disabled={adding}>{adding ? "Adding…" : "＋ Add team member"}</button>
+            <button className="secondary-button full" disabled={adding}>{!adding && <Plus size={16} aria-hidden="true" />}{adding ? "Adding…" : "Add team member"}</button>
           </form>
         </section>
 
@@ -764,7 +805,7 @@ function AdminView({ configured, members, settings, currentMember, onMembersChan
             <div className="field"><label htmlFor="team-name">Team name</label><input id="team-name" value={settings.teamName} onChange={(event) => onSettingsChange({ ...settings, teamName: event.target.value })} /></div>
             <div className="field"><label htmlFor="currency">Currency</label><Dropdown id="currency" value={settings.currency} options={CURRENCY_OPTIONS} onChange={(currency) => onSettingsChange({ ...settings, currency })} /></div>
             <div className="toggle-row"><div className="toggle-copy"><strong>Require proof of spending</strong><span>Receipt photo or payment screenshot</span></div><div className="toggle-action"><span>{settings.requireProof ? "Required" : "Optional"}</span><button type="button" className={`toggle ${settings.requireProof ? "on" : ""}`} onClick={() => onSettingsChange({ ...settings, requireProof: !settings.requireProof })} aria-label="Toggle required proof" aria-pressed={settings.requireProof} /></div></div>
-            <button className="primary-button dark full" onClick={saveSettings} disabled={saving}>{saving ? "Saving…" : "Save settings"}</button>
+            <button className="primary-button dark full" onClick={saveSettings} disabled={saving}>{!saving && <Save size={16} aria-hidden="true" />}{saving ? "Saving…" : "Save settings"}</button>
           </div>
         </section>
       </div>

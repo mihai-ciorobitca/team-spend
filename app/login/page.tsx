@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Image from "next/image";
+import { LockKeyhole } from "lucide-react";
 import { PasswordField } from "./password-field";
 
 export const metadata: Metadata = {
@@ -30,7 +31,7 @@ export default async function LoginPage({ searchParams }: {
       <section className="login-card">
         <div className="login-card-header">
           <div className="login-brand"><Image className="brand-logo" src="/peptiking-logo.avif" alt="Peptiking" width={240} height={168} priority /></div>
-          <div className="login-lock" aria-hidden="true"><span /></div>
+          <div className="login-lock" aria-hidden="true"><LockKeyhole size={23} strokeWidth={1.8} /></div>
         </div>
         <p className="eyebrow">Private workspace</p>
         <h1>Sign in to Peptiking.</h1>

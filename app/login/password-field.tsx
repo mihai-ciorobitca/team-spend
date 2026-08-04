@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { Eye, EyeOff } from "lucide-react";
 
 export function PasswordField() {
   const [visible, setVisible] = useState(false);
@@ -22,7 +23,7 @@ export function PasswordField() {
         aria-label={visible ? "Hide password" : "Show password"}
         aria-pressed={visible}
       >
-        <span className={`password-eye ${visible ? "visible" : ""}`} aria-hidden="true" />
+        {visible ? <EyeOff size={19} strokeWidth={1.8} aria-hidden="true" /> : <Eye size={19} strokeWidth={1.8} aria-hidden="true" />}
       </button>
     </div>
   );
