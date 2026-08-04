@@ -661,7 +661,7 @@ function HomeDashboard({ expenses, members, settings, currentMember, totalSpend,
   onDeleteExpense: (expenseId: string) => void;
   onViewProof: (expense: Expense) => void;
 }) {
-  const activeMembers = members.filter((member) => member.status === "active").length;
+  const activeMembers = members.filter((member) => member.status === "active" && member.role === "member").length;
   const displayExpenses = expenses.filter((expense) => expense.currency === settings.currency);
   const expensesWithProof = displayExpenses.filter((expense) => expense.proofUrl).length;
   const categories = CATEGORIES.map((category) => ({
