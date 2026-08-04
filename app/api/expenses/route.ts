@@ -73,3 +73,42 @@ export async function POST(request: Request) {
     return errorResponse(error);
   }
 }
+
+export async function PATCH(request: Request) {
+  try {
+    await requireSiteAccess(request);
+    const current = await requireMember(request);
+    if (current.role === "admin") return Response.json({ message: "Members can report their own expenses" }, { status: 403 });
+    const body = (await request.json()) as { expenseId?: string };
+    if (!body.expenseId) return Response.json({ message: "Choose an expense to report" }, { status: 400 });
+
+    const rows = await supabaseRequest<Array<Parameters<typeof mapExpense>[0]>>(
+      `/rest/v1/expenses?id=eq.${encodeURIComponent(body.expenseId)}&team_id=eq.${encodeURIComponent(current.team_id)}&spender_id=eq.${encodeURIComponent(current.id)}&select=*`,
+      { method: "PATCH", headers: { Prefer: "return=representation" }, body: JSON.stringify({ status: "issue" }) },
+    );
+    if (!rows[0]) return Response.json({ message: "Expense not found" }, { status: 404 });
+    return Response.json({ expense: mapExpense(rows[0]) });
+  } catch (error) {
+    return errorResponse(error);
+  }
+}
+
+export async function DELETE(request: Request) {
+  try {
+    await requireSiteAccess(request);
+    const current = await requireMember(request);
+    if (current.role !== "admin") return Response.json({ message: "Only admins can delete expenses" }, { status: 403 });
+    const expenseId = new URL(request.url).searchParams.get("expenseId");
+    if (!expenseId) return Response.json({ message: "Choose an expense to delete" }, { status: 400 });
+
+    const rows = await supabaseRequest<Array<Parameters<typeof mapExpense>[0]>>(
+      `/rest/v1/expenses?id=eq.${encodeURIComponent(expenseId)}&team_id=eq.${encodeURIComponent(current.team_id)}&select=*`,
+      { method: "DELETE", headers: { Prefer: "return=representation" } },
+    );
+    if (!rows[0]) return Response.json({ message: "Expense not found" }, { status: 404 });
+    if (rows[0].proof_path) await deleteProof(rows[0].proof_path).catch(() => undefined);
+    return Response.json({ expenseId });
+  } catch (error) {
+    return errorResponse(error);
+  }
+}

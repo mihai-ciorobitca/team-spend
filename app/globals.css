@@ -2815,3 +2815,67 @@ body {
   background: #edf6f4;
   color: var(--teal);
 }
+
+.expense-actions {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 7px;
+}
+
+.expense-action,
+.issue-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  min-height: 30px;
+  border-radius: 7px;
+  font: inherit;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.expense-action {
+  padding: 5px 8px;
+  border: 1px solid var(--line);
+  background: #fff;
+  color: var(--ink-soft);
+  cursor: pointer;
+}
+
+.expense-action:hover {
+  border-color: var(--teal);
+  color: var(--teal);
+}
+
+.expense-action.danger {
+  width: 30px;
+  padding: 0;
+  color: #b54135;
+}
+
+.expense-action.danger:hover {
+  border-color: #d8867d;
+  background: #fff5f3;
+  color: #a6342a;
+}
+
+.issue-badge {
+  padding: 5px 8px;
+  background: #fff3e7;
+  color: #a35c16;
+}
+
+@media (max-width: 699px) {
+  .expense-row {
+    grid-template-columns: 38px minmax(0, 1fr) auto;
+    gap: 9px;
+  }
+
+  .expense-actions {
+    grid-column: 2 / -1;
+    justify-content: flex-start;
+    margin-top: -3px;
+  }
+}

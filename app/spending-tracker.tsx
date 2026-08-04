@@ -17,6 +17,7 @@ import {
   Eye,
   EyeOff,
   FileUp,
+  Flag,
   Globe2,
   LayoutDashboard,
   KeyRound,
@@ -29,6 +30,7 @@ import {
   Search,
   Settings,
   Smartphone,
+  Trash2,
   Utensils,
   X,
   Zap,
@@ -60,6 +62,7 @@ type Expense = {
   spenderId: string;
   proofUrl?: string | null;
   notes?: string;
+  status?: "logged" | "issue";
 };
 
 type TeamSettings = {
@@ -370,6 +373,41 @@ export function SpendingTracker() {
     showToast("Expense saved and proof uploaded.");
   };
 
+  const reportExpense = async (expenseId: string) => {
+    try {
+      if (!configured) {
+        setExpenses((current) => current.map((expense) => expense.id === expenseId ? { ...expense, status: "issue" } : expense));
+        showToast("Expense marked for admin review.");
+        return;
+      }
+      const response = await fetch("/api/expenses", { method: "PATCH", headers: { "content-type": "application/json" }, body: JSON.stringify({ expenseId }) });
+      const payload = (await response.json()) as { expense?: Expense; message?: string };
+      if (!response.ok || !payload.expense) throw new Error(payload.message ?? "Could not report this expense");
+      setExpenses((current) => current.map((expense) => expense.id === expenseId ? payload.expense! : expense));
+      showToast("Expense marked for admin review.");
+    } catch (error) {
+      showToast(error instanceof Error ? error.message : "Could not report this expense");
+    }
+  };
+
+  const deleteExpense = async (expenseId: string) => {
+    if (!window.confirm("Delete this expense and its proof? This cannot be undone.")) return;
+    try {
+      if (!configured) {
+        setExpenses((current) => current.filter((expense) => expense.id !== expenseId));
+        showToast("Expense deleted.");
+        return;
+      }
+      const response = await fetch(`/api/expenses?expenseId=${encodeURIComponent(expenseId)}`, { method: "DELETE" });
+      const payload = (await response.json()) as { message?: string };
+      if (!response.ok) throw new Error(payload.message ?? "Could not delete this expense");
+      setExpenses((current) => current.filter((expense) => expense.id !== expenseId));
+      showToast("Expense deleted.");
+    } catch (error) {
+      showToast(error instanceof Error ? error.message : "Could not delete this expense");
+    }
+  };
+
   if (!ready) {
     return <main className="app-loading" aria-live="polite"><Image className="brand-symbol" src="/icon.png" alt="" width={40} height={40} priority /><span>Opening your workspace…</span></main>;
   }
@@ -408,6 +446,8 @@ export function SpendingTracker() {
             digitalSpend={digitalSpend}
             onAdd={() => setAddOpen(true)}
             onViewAll={() => navigate("activity")}
+            onReportExpense={reportExpense}
+            onDeleteExpense={deleteExpense}
           />
         )}
 
@@ -421,6 +461,9 @@ export function SpendingTracker() {
             onSearch={setSearch}
             onFilter={setCategoryFilter}
             onAdd={() => setAddOpen(true)}
+            currentMember={currentMember}
+            onReportExpense={reportExpense}
+            onDeleteExpense={deleteExpense}
           />
         )}
 
@@ -515,7 +558,7 @@ function BottomNav({ tab, isAdmin, onNavigate, onAdd }: { tab: Tab; isAdmin: boo
   );
 }
 
-function HomeDashboard({ expenses, members, settings, currentMember, totalSpend, cashSpend, digitalSpend, onAdd, onViewAll }: {
+function HomeDashboard({ expenses, members, settings, currentMember, totalSpend, cashSpend, digitalSpend, onAdd, onViewAll, onReportExpense, onDeleteExpense }: {
   expenses: Expense[];
   members: Member[];
   settings: TeamSettings;
@@ -525,6 +568,8 @@ function HomeDashboard({ expenses, members, settings, currentMember, totalSpend,
   digitalSpend: number;
   onAdd: () => void;
   onViewAll: () => void;
+  onReportExpense: (expenseId: string) => void;
+  onDeleteExpense: (expenseId: string) => void;
 }) {
   const activeMembers = members.filter((member) => member.status === "active").length;
   const displayExpenses = expenses.filter((expense) => expense.currency === settings.currency);
@@ -587,14 +632,14 @@ function HomeDashboard({ expenses, members, settings, currentMember, totalSpend,
 
         <article className="expense-panel">
           <div className="section-head"><div><h2>Recent expenses</h2><p>Latest team activity</p></div><button className="text-button icon-text-button" onClick={onViewAll}>View all<ArrowRight size={15} aria-hidden="true" /></button></div>
-          <ExpenseList expenses={expenses.slice(0, 5)} members={members} settings={settings} />
+          <ExpenseList expenses={expenses.slice(0, 5)} members={members} settings={settings} currentMember={currentMember} onReportExpense={onReportExpense} onDeleteExpense={onDeleteExpense} />
         </article>
       </section>
     </>
   );
 }
 
-function ActivityView({ expenses, members, settings, search, categoryFilter, onSearch, onFilter, onAdd }: {
+function ActivityView({ expenses, members, settings, search, categoryFilter, onSearch, onFilter, onAdd, currentMember, onReportExpense, onDeleteExpense }: {
   expenses: Expense[];
   members: Member[];
   settings: TeamSettings;
@@ -603,6 +648,9 @@ function ActivityView({ expenses, members, settings, search, categoryFilter, onS
   onSearch: (value: string) => void;
   onFilter: (value: string) => void;
   onAdd: () => void;
+  currentMember: Member;
+  onReportExpense: (expenseId: string) => void;
+  onDeleteExpense: (expenseId: string) => void;
 }) {
   return (
     <>
@@ -616,13 +664,13 @@ function ActivityView({ expenses, members, settings, search, categoryFilter, onS
       </div>
       <section className="expense-panel">
         <div className="section-head"><div><h2>{categoryFilter === "All" ? "All spending" : categoryFilter}</h2><p>{expenses.length} expense{expenses.length === 1 ? "" : "s"}{settings.currencies.length > 1 ? ` · ${settings.currency} total` : ""}</p></div><strong>{formatMoney(expenses.filter((item) => item.currency === settings.currency).reduce((sum, item) => sum + item.amount, 0), settings.currency)}</strong></div>
-        <ExpenseList expenses={expenses} members={members} settings={settings} />
+        <ExpenseList expenses={expenses} members={members} settings={settings} currentMember={currentMember} onReportExpense={onReportExpense} onDeleteExpense={onDeleteExpense} />
       </section>
     </>
   );
 }
 
-function ExpenseList({ expenses, members, settings }: { expenses: Expense[]; members: Member[]; settings: TeamSettings }) {
+function ExpenseList({ expenses, members, settings, currentMember, onReportExpense, onDeleteExpense }: { expenses: Expense[]; members: Member[]; settings: TeamSettings; currentMember: Member; onReportExpense: (expenseId: string) => void; onDeleteExpense: (expenseId: string) => void }) {
   if (!expenses.length) return <div className="empty-state">No expenses match this view.</div>;
   return (
     <div className="expense-list">
@@ -638,6 +686,10 @@ function ExpenseList({ expenses, members, settings }: { expenses: Expense[]; mem
               <p className="expense-subtitle"><span>{member?.name ?? "Team member"}</span><span>·</span><span>{displayDate(expense.spentAt)}</span>{expense.proofUrl && <><span>·</span><span className="proof-dot" title="Proof attached" /></>}</p>
             </div>
             <div className="expense-number"><strong>{formatMoney(expense.amount, expense.currency)}</strong><span className="payment-label"><PaymentIcon size={12} strokeWidth={1.9} aria-hidden="true" />{PAYMENT_LABELS[expense.paymentMethod]}</span></div>
+            <div className="expense-actions">
+              {expense.status === "issue" && <span className="issue-badge"><Flag size={12} aria-hidden="true" />Issue</span>}
+              {currentMember.role === "admin" ? <button type="button" className="expense-action danger" onClick={() => onDeleteExpense(expense.id)} aria-label={`Delete ${expense.merchant}`} title="Delete expense"><Trash2 size={15} aria-hidden="true" /></button> : expense.spenderId === currentMember.id && expense.status !== "issue" ? <button type="button" className="expense-action" onClick={() => onReportExpense(expense.id)} title="Report an issue"><Flag size={15} aria-hidden="true" /><span>Report issue</span></button> : null}
+            </div>
           </div>
         );
       })}

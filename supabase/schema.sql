@@ -43,7 +43,7 @@ create table if not exists public.expenses (
   proof_path text,
   proof_name text,
   proof_type text,
-  status text not null default 'logged' check (status in ('logged', 'pending', 'approved', 'rejected')),
+  status text not null default 'logged' check (status in ('logged', 'issue', 'pending', 'approved', 'rejected')),
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );

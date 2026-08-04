@@ -33,6 +33,7 @@ type SupabaseExpenseRow = {
   spender_id: string;
   proof_path: string | null;
   notes: string | null;
+  status: "logged" | "issue";
 };
 
 export type Member = {
@@ -63,6 +64,7 @@ export type Expense = {
   spenderId: string;
   proofUrl: string | null;
   notes: string;
+  status: "logged" | "issue";
 };
 
 export class ApiError extends Error {
@@ -248,6 +250,7 @@ export function mapExpense(row: SupabaseExpenseRow, proofUrl: string | null = ro
     spenderId: row.spender_id,
     proofUrl,
     notes: row.notes ?? "",
+    status: row.status === "issue" ? "issue" : "logged",
   };
 }
 
