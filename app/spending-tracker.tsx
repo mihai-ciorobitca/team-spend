@@ -113,6 +113,7 @@ const DEFAULT_SETTINGS: TeamSettings = {
 };
 
 const APP_VERSION = process.env.NEXT_PUBLIC_APP_VERSION ?? "1.0.0";
+const EUR_TO_VND = 30_000;
 
 function isNewerVersion(requiredVersion: string, currentVersion: string) {
   const required = requiredVersion.split(".").map(Number);
@@ -167,6 +168,14 @@ function avatarStyle(color: string): CSSProperties {
 }
 
 function formatMoney(amount: number, currency: string, compact = false) {
+  if (currency === "VND") {
+    const absolute = Math.abs(amount);
+    const sign = amount < 0 ? "-" : "";
+    const compactNumber = (value: number) => new Intl.NumberFormat("en", { maximumFractionDigits: value < 10 ? 1 : 0 }).format(value);
+    if (absolute >= 1_000_000) return `${sign}₫${compactNumber(absolute / 1_000_000)}M`;
+    if (absolute >= 1_000) return `${sign}₫${compactNumber(absolute / 1_000)}K`;
+    return `${sign}₫${new Intl.NumberFormat("en", { maximumFractionDigits: 0 }).format(absolute)}`;
+  }
   const locale = currency === "VND" ? "vi-VN" : "en-IE";
   return new Intl.NumberFormat(locale, {
     style: "currency",
@@ -174,6 +183,16 @@ function formatMoney(amount: number, currency: string, compact = false) {
     notation: compact ? "compact" : "standard",
     maximumFractionDigits: amount % 1 === 0 ? 0 : 2,
   }).format(amount);
+}
+
+function toEuros(amount: number, currency: string) {
+  return currency === "VND" ? amount / EUR_TO_VND : amount;
+}
+
+function getCurrencyTotals(expenses: Expense[]) {
+  const eur = expenses.filter((expense) => expense.currency === "EUR").reduce((sum, expense) => sum + expense.amount, 0);
+  const vnd = expenses.filter((expense) => expense.currency === "VND").reduce((sum, expense) => sum + expense.amount, 0);
+  return { eur, vnd, totalEur: eur + vnd / EUR_TO_VND, totalVnd: vnd + eur * EUR_TO_VND };
 }
 
 type DropdownOption = {
@@ -363,10 +382,7 @@ export function SpendingTracker() {
     return () => window.clearTimeout(timeout);
   }, [toast]);
 
-  const primaryExpenses = useMemo(() => expenses.filter((expense) => expense.currency === settings.currency), [expenses, settings.currency]);
-  const totalSpend = useMemo(() => primaryExpenses.reduce((sum, expense) => sum + expense.amount, 0), [primaryExpenses]);
-  const cashSpend = useMemo(() => primaryExpenses.filter((expense) => expense.paymentMethod === "cash").reduce((sum, expense) => sum + expense.amount, 0), [primaryExpenses]);
-  const digitalSpend = totalSpend - cashSpend;
+  const currencyTotals = useMemo(() => getCurrencyTotals(expenses), [expenses]);
   const filteredExpenses = useMemo(() => {
     const term = search.trim().toLowerCase();
     return expenses.filter((expense) => {
@@ -564,9 +580,7 @@ export function SpendingTracker() {
             members={members}
             settings={settings}
             currentMember={currentMember}
-            totalSpend={totalSpend}
-            cashSpend={cashSpend}
-            digitalSpend={digitalSpend}
+            currencyTotals={currencyTotals}
             onAdd={() => setAddOpen(true)}
             onViewAll={() => navigate("activity")}
             onReportExpense={reportExpense}
@@ -685,14 +699,12 @@ function BottomNav({ tab, isAdmin, onNavigate, onAdd }: { tab: Tab; isAdmin: boo
   );
 }
 
-function HomeDashboard({ expenses, members, settings, currentMember, totalSpend, cashSpend, digitalSpend, onAdd, onViewAll, onReportExpense, onDeleteExpense, onViewProof }: {
+function HomeDashboard({ expenses, members, settings, currentMember, currencyTotals, onAdd, onViewAll, onReportExpense, onDeleteExpense, onViewProof }: {
   expenses: Expense[];
   members: Member[];
   settings: TeamSettings;
   currentMember: Member;
-  totalSpend: number;
-  cashSpend: number;
-  digitalSpend: number;
+  currencyTotals: ReturnType<typeof getCurrencyTotals>;
   onAdd: () => void;
   onViewAll: () => void;
   onReportExpense: (expenseId: string) => void;
@@ -700,11 +712,12 @@ function HomeDashboard({ expenses, members, settings, currentMember, totalSpend,
   onViewProof: (expense: Expense) => void;
 }) {
   const activeMembers = members.filter((member) => member.status === "active" && member.role === "member").length;
-  const displayExpenses = expenses.filter((expense) => expense.currency === settings.currency);
-  const expensesWithProof = displayExpenses.filter((expense) => expense.proofUrl).length;
+  const eurExpenses = expenses.filter((expense) => expense.currency === "EUR");
+  const vndExpenses = expenses.filter((expense) => expense.currency === "VND");
+  const expensesWithProof = expenses.filter((expense) => expense.proofUrl).length;
   const categories = CATEGORIES.map((category) => ({
     category,
-    amount: displayExpenses.filter((expense) => expense.category === category).reduce((sum, expense) => sum + expense.amount, 0),
+    amount: expenses.filter((expense) => expense.category === category).reduce((sum, expense) => sum + toEuros(expense.amount, expense.currency), 0),
   })).filter((item) => item.amount > 0).sort((a, b) => b.amount - a.amount).slice(0, 4);
 
   return (
@@ -713,49 +726,52 @@ function HomeDashboard({ expenses, members, settings, currentMember, totalSpend,
         <div>
           <p className="eyebrow">August overview</p>
           <h1 className="page-heading">Welcome, {currentMember.name.split(" ")[0]}.</h1>
-          <p className="intro-copy">Your team has logged {expenses.length} expenses this month{settings.currencies.length > 1 ? ` · totals shown in ${settings.currency}` : ""}.</p>
+          <p className="intro-copy">Your team has logged {expenses.length} expenses this month · €1 = ₫30K.</p>
         </div>
         {currentMember.role === "member" && <button className="primary-button desktop-add" onClick={onAdd}><Plus size={17} aria-hidden="true" />Add expense</button>}
       </div>
 
       <section className="summary-grid" aria-label="Monthly spending summary">
         <article className="hero-card">
-          <p className="hero-label">Total {settings.currency} team spend</p>
-          <h2 className="hero-amount">{formatMoney(totalSpend, settings.currency)}</h2>
-          <div className="hero-meta"><span className="hero-meta-dot" /><span>{displayExpenses.length} expense{displayExpenses.length === 1 ? "" : "s"} in {settings.currency}</span></div>
+          <p className="hero-label">Combined team spend</p>
+          <h2 className="hero-amount">{formatMoney(currencyTotals.totalEur, "EUR")}</h2>
+          <p className="hero-converted-total">{formatMoney(currencyTotals.totalVnd, "VND")} total</p>
+          <div className="hero-meta"><span className="hero-meta-dot" /><span>{expenses.length} expense{expenses.length === 1 ? "" : "s"} · fixed rate €1 = ₫30K</span></div>
           <div className="hero-insight"><strong>{activeMembers}</strong><span>active member{activeMembers === 1 ? "" : "s"}</span></div>
         </article>
         <div className="mini-grid">
           <article className="stat-card">
             <span className="stat-icon"><Banknote size={17} strokeWidth={1.9} aria-hidden="true" /></span>
-            <span className="stat-label">Cash spending</span>
-            <strong className="stat-value">{formatMoney(cashSpend, settings.currency)}</strong>
+            <span className="stat-label">Expenses in EUR</span>
+            <strong className="stat-value">{formatMoney(currencyTotals.eur, "EUR")}</strong>
+            <span className="stat-note">{eurExpenses.length} expense{eurExpenses.length === 1 ? "" : "s"}</span>
           </article>
           <article className="stat-card orange">
             <span className="stat-icon"><Smartphone size={17} strokeWidth={1.9} aria-hidden="true" /></span>
-            <span className="stat-label">Online & phone</span>
-            <strong className="stat-value">{formatMoney(digitalSpend, settings.currency)}</strong>
+            <span className="stat-label">Expenses in VND</span>
+            <strong className="stat-value">{formatMoney(currencyTotals.vnd, "VND")}</strong>
+            <span className="stat-note">{vndExpenses.length} expense{vndExpenses.length === 1 ? "" : "s"}</span>
           </article>
         </div>
       </section>
 
       <section className="dashboard-grid">
         <article className="card">
-          <div className="section-head"><div><h2>Spending by category</h2><p>Current month distribution</p></div><strong>{formatMoney(totalSpend, settings.currency, true)}</strong></div>
+          <div className="section-head"><div><h2>Spending by category</h2><p>Current month · converted to EUR</p></div><strong>{formatMoney(currencyTotals.totalEur, "EUR", true)}</strong></div>
           <div className="category-list">
             {categories.map((item) => {
               const CategoryIcon = CATEGORY_ICONS[item.category] ?? CircleEllipsis;
               return (
               <div className="category-row" key={item.category}>
                 <span className="category-dot"><CategoryIcon size={16} strokeWidth={1.9} aria-hidden="true" /></span>
-                <div className="category-copy"><strong>{item.category}</strong><span>{Math.round((item.amount / totalSpend) * 100)}% of spend</span></div>
-                <span className="category-amount">{formatMoney(item.amount, settings.currency)}</span>
+                <div className="category-copy"><strong>{item.category}</strong><span>{Math.round((item.amount / currencyTotals.totalEur) * 100)}% of spend</span></div>
+                <span className="category-amount">{formatMoney(item.amount, "EUR")}</span>
               </div>
               );
             })}
             {!categories.length && <div className="category-empty">Categories will appear after the first expense.</div>}
           </div>
-          <div className="category-footnote"><span className="proof-dot" />{expensesWithProof} expense{expensesWithProof === 1 ? "" : "s"} in {settings.currency} with proof</div>
+          <div className="category-footnote"><span className="proof-dot" />{expensesWithProof} expense{expensesWithProof === 1 ? "" : "s"} with proof</div>
         </article>
 
         <article className="expense-panel">
@@ -781,6 +797,7 @@ function ActivityView({ expenses, members, settings, search, categoryFilter, onS
   onDeleteExpense: (expenseId: string) => void;
   onViewProof: (expense: Expense) => void;
 }) {
+  const totals = getCurrencyTotals(expenses);
   return (
     <>
       <div className="tab-header">
@@ -792,7 +809,11 @@ function ActivityView({ expenses, members, settings, search, categoryFilter, onS
         {["All", ...CATEGORIES].map((category) => <button key={category} className={`filter-chip ${categoryFilter === category ? "active" : ""}`} onClick={() => onFilter(category)}>{category}</button>)}
       </div>
       <section className="expense-panel">
-        <div className="section-head"><div><h2>{categoryFilter === "All" ? "All spending" : categoryFilter}</h2><p>{expenses.length} expense{expenses.length === 1 ? "" : "s"}{settings.currencies.length > 1 ? ` · total in ${settings.currency}` : ""}</p></div><strong>{formatMoney(expenses.filter((item) => item.currency === settings.currency).reduce((sum, item) => sum + item.amount, 0), settings.currency)}</strong></div>
+        <div className="section-head"><div><h2>{categoryFilter === "All" ? "All spending" : categoryFilter}</h2><p>{expenses.length} expense{expenses.length === 1 ? "" : "s"} · €1 = ₫30K</p></div><div className="ledger-grand-total"><span>Combined total</span><strong>{formatMoney(totals.totalEur, "EUR")}</strong><small>{formatMoney(totals.totalVnd, "VND")}</small></div></div>
+        <div className="ledger-currency-breakdown" aria-label="Spending totals by currency">
+          <span><small>EUR expenses</small><strong>{formatMoney(totals.eur, "EUR")}</strong></span>
+          <span><small>VND expenses</small><strong>{formatMoney(totals.vnd, "VND")}</strong></span>
+        </div>
         <ExpenseList expenses={expenses} members={members} settings={settings} currentMember={currentMember} onReportExpense={onReportExpense} onDeleteExpense={onDeleteExpense} onViewProof={onViewProof} />
       </section>
     </>
@@ -815,7 +836,7 @@ function ExpenseList({ expenses, members, settings, currentMember, onReportExpen
               <p className="expense-subtitle"><span>{member?.name ?? "Team member"}</span><span>·</span><span>{displayDate(expense.spentAt)}</span>{expense.proofUrl && <><span>·</span><span className="proof-dot" title="Proof attached" /></>}</p>
             </div>
             <div className="expense-meta">
-              <div className="expense-number"><strong>{formatMoney(expense.amount, expense.currency)}</strong><span className="payment-label"><PaymentIcon size={12} strokeWidth={1.9} aria-hidden="true" />{PAYMENT_LABELS[expense.paymentMethod]}</span></div>
+              <div className="expense-number"><strong>{formatMoney(expense.amount, expense.currency)}</strong><span className="expense-conversion">≈ {expense.currency === "VND" ? formatMoney(expense.amount / EUR_TO_VND, "EUR") : formatMoney(expense.amount * EUR_TO_VND, "VND")}</span><span className="payment-label"><PaymentIcon size={12} strokeWidth={1.9} aria-hidden="true" />{PAYMENT_LABELS[expense.paymentMethod]}</span></div>
               <div className="expense-actions">
                 {expense.status === "issue" && <span className="issue-badge"><Flag size={12} aria-hidden="true" />Issue</span>}
                 {expense.proofUrl && <button type="button" className="expense-action proof-action" onClick={() => onViewProof(expense)}><Eye size={15} aria-hidden="true" /><span>View proof</span></button>}

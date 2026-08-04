@@ -2016,6 +2016,15 @@ body {
   letter-spacing: -0.045em;
 }
 
+.hero-converted-total {
+  position: relative;
+  z-index: 1;
+  margin: 7px 0 0;
+  color: rgba(255, 255, 255, 0.72);
+  font-size: 15px;
+  font-weight: 700;
+}
+
 .hero-meta {
   margin-top: 24px;
   border: 1px solid rgba(255, 255, 255, 0.12);
@@ -2093,6 +2102,62 @@ body {
   font-weight: 720;
 }
 
+.stat-note {
+  display: block;
+  margin-top: 4px;
+  color: var(--ink-soft);
+  font-size: 10px;
+  font-weight: 650;
+}
+
+.ledger-grand-total {
+  display: grid;
+  justify-items: end;
+  flex: 0 0 auto;
+  text-align: right;
+}
+
+.ledger-grand-total span,
+.ledger-grand-total small {
+  color: var(--ink-soft);
+  font-size: 10px;
+  font-weight: 650;
+}
+
+.ledger-grand-total strong {
+  margin: 2px 0;
+  color: var(--teal-dark);
+  font-size: 18px;
+}
+
+.ledger-currency-breakdown {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  margin: -4px 0 16px;
+}
+
+.ledger-currency-breakdown > span {
+  display: grid;
+  gap: 3px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 10px 12px;
+  background: #f7f9fb;
+}
+
+.ledger-currency-breakdown small {
+  color: var(--ink-soft);
+  font-size: 10px;
+  font-weight: 650;
+  text-transform: uppercase;
+}
+
+.ledger-currency-breakdown strong {
+  color: var(--ink);
+  font-size: 15px;
+}
+
 .card,
 .expense-panel,
 .admin-card {
@@ -2144,6 +2209,12 @@ body {
 .expense-title,
 .expense-number strong {
   font-weight: 720;
+}
+
+.expense-number .expense-conversion {
+  color: #8f6b0b;
+  font-size: 10px;
+  font-weight: 750;
 }
 
 .expense-icon {
@@ -2640,6 +2711,9 @@ body {
   }
 
   html.login-keyboard-open .login-card {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
     top: var(--login-viewport-top, 0px);
     left: var(--login-viewport-left, 0px);
     width: var(--login-viewport-width, 100vw);
@@ -2658,7 +2732,19 @@ body {
   }
 
   html.login-keyboard-open .login-card-header {
-    display: none;
+    display: flex;
+    margin: 0 0 10px;
+  }
+
+  html.login-keyboard-open .login-card-header .brand-logo {
+    width: 82px;
+    height: auto;
+  }
+
+  html.login-keyboard-open .login-card-header .login-lock {
+    display: grid;
+    width: 36px;
+    height: 36px;
   }
 
   html.login-keyboard-open .login-card .eyebrow {
@@ -2886,6 +2972,19 @@ body {
     overflow-y: hidden;
   }
 
+  html.login-keyboard-open.login-keyboard-tight .login-card-header {
+    margin-bottom: 7px;
+  }
+
+  html.login-keyboard-open.login-keyboard-tight .login-card-header .brand-logo {
+    width: 68px;
+  }
+
+  html.login-keyboard-open.login-keyboard-tight .login-card-header .login-lock {
+    width: 32px;
+    height: 32px;
+  }
+
   html.login-keyboard-open.login-keyboard-tight .login-card .eyebrow {
     display: none;
   }
@@ -2933,6 +3032,10 @@ body {
   }
 
   html.login-keyboard-open.login-keyboard-short .login-copy {
+    display: none;
+  }
+
+  html.login-keyboard-open.login-keyboard-short .login-card-header {
     display: none;
   }
 
