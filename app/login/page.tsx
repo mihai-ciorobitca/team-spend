@@ -3,6 +3,7 @@ import Image from "next/image";
 import { cookies } from "next/headers";
 import { LockKeyhole } from "lucide-react";
 import { PasswordField } from "./password-field";
+import { LoginViewportSync } from "./login-viewport-sync";
 
 export const metadata: Metadata = {
   title: { absolute: "Sign in to Peptiking" },
@@ -31,6 +32,7 @@ export default async function LoginPage({ searchParams }: {
 
   return (
     <main className="login-shell">
+      <LoginViewportSync />
       <section className="login-card">
         <div className="login-card-header">
           <div className="login-brand"><Image className="brand-logo" src="/peptiking-logo.avif" alt="Peptiking" width={240} height={168} priority /></div>
