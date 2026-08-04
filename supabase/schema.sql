@@ -8,6 +8,8 @@ create table if not exists public.teams (
   name text not null default 'My Team' check (char_length(name) between 1 and 100),
   currency text not null default 'EUR' check (currency in ('EUR', 'VND')),
   allowed_currencies text[] not null default array['EUR']::text[] check (allowed_currencies <@ array['EUR', 'VND']::text[] and cardinality(allowed_currencies) > 0),
+  categories text[] not null default array['Meals', 'Transport', 'Software', 'Supplies', 'Utilities', 'Travel', 'Other']::text[] check (cardinality(categories) between 1 and 50),
+  saved_places text[] not null default array[]::text[] check (cardinality(saved_places) <= 50),
   require_proof boolean not null default true,
   required_app_version text not null default '1.0.0' check (required_app_version ~ '^\d+(\.\d+){0,2}$'),
   created_at timestamptz not null default now(),
@@ -32,12 +34,13 @@ create table if not exists public.team_members (
 create table if not exists public.expenses (
   id uuid primary key default gen_random_uuid(),
   team_id uuid not null references public.teams(id) on delete cascade,
+  client_id text,
   spender_id uuid not null references public.team_members(id),
   created_by uuid not null references public.team_members(id),
   merchant text not null check (char_length(merchant) between 1 and 160),
   amount numeric(14,2) not null check (amount > 0),
   currency text not null default 'EUR' check (currency in ('EUR', 'VND')),
-  category text not null check (category in ('Meals', 'Transport', 'Software', 'Supplies', 'Utilities', 'Travel', 'Other')),
+  category text not null check (char_length(btrim(category)) between 1 and 50),
   payment_method text not null check (payment_method in ('cash', 'card', 'bank_transfer', 'wallet')),
   spent_at date not null default current_date,
   notes text,
@@ -98,8 +101,19 @@ on conflict (id) do update set
 -- Keep existing projects aligned when this schema is run again.
 alter table public.team_members add column if not exists password_hash text;
 alter table public.teams add column if not exists allowed_currencies text[] not null default array['EUR']::text[];
+alter table public.teams add column if not exists categories text[] not null default array['Meals', 'Transport', 'Software', 'Supplies', 'Utilities', 'Travel', 'Other']::text[];
+alter table public.teams drop constraint if exists teams_categories_check;
+alter table public.teams add constraint teams_categories_check check (cardinality(categories) between 1 and 50);
+alter table public.teams add column if not exists saved_places text[] not null default array[]::text[];
+alter table public.teams drop constraint if exists teams_saved_places_check;
+alter table public.teams add constraint teams_saved_places_check check (cardinality(saved_places) <= 50);
 alter table public.teams add column if not exists required_app_version text not null default '1.0.0';
 alter table public.expenses add column if not exists currency text not null default 'EUR';
+alter table public.expenses add column if not exists client_id text;
+alter table public.expenses drop constraint if exists expenses_team_client_id_key;
+alter table public.expenses add constraint expenses_team_client_id_key unique (team_id, client_id);
+alter table public.expenses drop constraint if exists expenses_category_check;
+alter table public.expenses add constraint expenses_category_check check (char_length(btrim(category)) between 1 and 50);
 update public.teams
 set currency = 'EUR'
 where currency not in ('EUR', 'VND');

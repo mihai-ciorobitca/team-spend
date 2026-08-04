@@ -14,6 +14,7 @@ export async function generateMetadata(): Promise<Metadata> {
       template: "%s · Peptiking",
     },
     description: "A fast, mobile-first spending tracker for your whole team.",
+    manifest: "/manifest.webmanifest",
     icons: {
       icon: [
         { url: "/favicon.ico", sizes: "256x256", type: "image/x-icon" },

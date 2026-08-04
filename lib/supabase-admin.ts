@@ -14,6 +14,8 @@ type SupabaseTeamRow = {
   name: string;
   currency: string;
   allowed_currencies?: string[] | null;
+  categories?: string[] | null;
+  saved_places?: string[] | null;
   require_proof: boolean;
   required_app_version?: string | null;
 };
@@ -22,9 +24,20 @@ const DEFAULT_ADMIN_EMAIL = "admin@peptikingmedia.com";
 const DEFAULT_ADMIN_NAME = "Admin";
 const LEGACY_ADMIN_EMAIL = "owner@local.demo";
 const SUPPORTED_CURRENCIES = new Set(["EUR", "VND"]);
+const DEFAULT_CATEGORIES = ["Meals", "Transport", "Software", "Supplies", "Utilities", "Travel", "Other"];
+
+function normalizeCategories(categories?: string[] | null) {
+  const normalized = Array.from(new Set((categories ?? []).map((category) => category.trim()).filter((category) => category.length > 0 && category.length <= 50))).slice(0, 50);
+  return normalized.length ? normalized : DEFAULT_CATEGORIES;
+}
+
+function normalizeSavedPlaces(places?: string[] | null) {
+  return Array.from(new Set((places ?? []).map((place) => place.trim()).filter((place) => place.length > 0 && place.length <= 160))).slice(0, 50);
+}
 
 type SupabaseExpenseRow = {
   id: string;
+  client_id?: string | null;
   merchant: string;
   amount: number | string;
   currency?: string | null;
@@ -52,12 +65,15 @@ export type TeamSettings = {
   teamName: string;
   currency: string;
   currencies: string[];
+  categories: string[];
+  savedPlaces: string[];
   requireProof: boolean;
   requiredAppVersion: string;
 };
 
 export type Expense = {
   id: string;
+  clientId?: string | null;
   merchant: string;
   amount: number;
   currency: string;
@@ -238,6 +254,8 @@ export function mapSettings(row: SupabaseTeamRow): TeamSettings {
     teamName: row.name,
     currency: currencies[0] ?? "EUR",
     currencies: currencies.length ? currencies : ["EUR"],
+    categories: normalizeCategories(row.categories),
+    savedPlaces: normalizeSavedPlaces(row.saved_places),
     requireProof: row.require_proof,
     requiredAppVersion: /^\d+(\.\d+){0,2}$/.test(row.required_app_version ?? "") ? row.required_app_version! : "1.0.0",
   };
@@ -246,6 +264,7 @@ export function mapSettings(row: SupabaseTeamRow): TeamSettings {
 export function mapExpense(row: SupabaseExpenseRow, proofUrl: string | null = row.proof_path ? "attached" : null): Expense {
   return {
     id: row.id,
+    clientId: row.client_id ?? null,
     merchant: row.merchant,
     amount: Number(row.amount),
     currency: SUPPORTED_CURRENCIES.has(row.currency ?? "") ? row.currency! : "EUR",
