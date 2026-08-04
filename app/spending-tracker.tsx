@@ -503,7 +503,7 @@ export function SpendingTracker() {
 
       <BottomNav tab={tab} isAdmin={isAdmin} onNavigate={navigate} onAdd={() => setAddOpen(true)} />
 
-      {addOpen && (
+      {addOpen && !isAdmin && (
         <ExpenseModal
           members={members.filter((member) => (
             member.status === "active"
@@ -575,7 +575,6 @@ function BottomNav({ tab, isAdmin, onNavigate, onAdd }: { tab: Tab; isAdmin: boo
     <nav className="bottom-nav" aria-label="Mobile navigation">
       <NavButton label="Home" icon={LayoutDashboard} active={tab === "home"} onClick={() => onNavigate("home")} />
       <NavButton label="Expenses" icon={ReceiptText} active={tab === "activity"} onClick={() => onNavigate("activity")} />
-      <button className="nav-add" onClick={onAdd} aria-label="Add expense"><Plus aria-hidden="true" /></button>
       <NavButton label="Admin" icon={Settings} active={tab === "admin"} onClick={() => onNavigate("admin")} />
     </nav>
   );
@@ -611,7 +610,7 @@ function HomeDashboard({ expenses, members, settings, currentMember, totalSpend,
           <h1 className="page-heading">Welcome, {currentMember.name.split(" ")[0]}.</h1>
           <p className="intro-copy">Your team has logged {expenses.length} expenses this month{settings.currencies.length > 1 ? ` · totals shown in ${settings.currency}` : ""}.</p>
         </div>
-        <button className="primary-button desktop-add" onClick={onAdd}><Plus size={17} aria-hidden="true" />Add expense</button>
+        {currentMember.role === "member" && <button className="primary-button desktop-add" onClick={onAdd}><Plus size={17} aria-hidden="true" />Add expense</button>}
       </div>
 
       <section className="summary-grid" aria-label="Monthly spending summary">
@@ -681,7 +680,7 @@ function ActivityView({ expenses, members, settings, search, categoryFilter, onS
     <>
       <div className="tab-header">
         <div><p className="eyebrow">Team ledger</p><h1>Expenses</h1><p className="intro-copy">Every payment, person, and proof in one place.</p></div>
-        <button className="primary-button desktop-add" onClick={onAdd}><Plus size={17} aria-hidden="true" />Add expense</button>
+        {currentMember.role === "member" && <button className="primary-button desktop-add" onClick={onAdd}><Plus size={17} aria-hidden="true" />Add expense</button>}
       </div>
       <div className="search-box"><Search size={17} strokeWidth={1.9} aria-hidden="true" /><input aria-label="Search expenses" value={search} onChange={(event) => onSearch(event.target.value)} placeholder="Search merchant, category or person" /></div>
       <div className="filter-row" aria-label="Expense categories">

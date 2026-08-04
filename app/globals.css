@@ -2560,6 +2560,10 @@ body {
   grid-template-columns: 1fr 62px 1fr;
 }
 
+.bottom-nav:not(.member-nav) {
+  grid-template-columns: repeat(3, 1fr);
+}
+
 @media (max-width: 699px) {
   .login-lock {
     display: none;
