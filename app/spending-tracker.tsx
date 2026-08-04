@@ -81,6 +81,8 @@ type BootstrapPayload = {
   message?: string;
 };
 
+type ProofViewerValue = { expense: Expense; url: string; contentType: string };
+
 const DEMO_MEMBERS: Member[] = [
   { id: "m-rog", name: "Admin", email: "admin@peptikingmedia.com", role: "admin", status: "active", avatarColor: "#f3bf73", hasPassword: true },
   { id: "m-maya", name: "Maya Chen", email: "maya@northstar.team", role: "member", status: "active", avatarColor: "#a9d9c7", hasPassword: true },
@@ -275,6 +277,7 @@ export function SpendingTracker() {
   const [categoryFilter, setCategoryFilter] = useState("All");
   const [ready, setReady] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
+  const [proofViewer, setProofViewer] = useState<ProofViewerValue | null>(null);
 
   useEffect(() => {
     let active = true;
@@ -408,6 +411,22 @@ export function SpendingTracker() {
     }
   };
 
+  const viewProof = async (expense: Expense) => {
+    if (!configured) {
+      if (expense.proofUrl?.startsWith("blob:")) setProofViewer({ expense, url: expense.proofUrl, contentType: "image/*" });
+      else showToast("Connect Supabase to open stored receipt proofs.");
+      return;
+    }
+    try {
+      const response = await fetch(`/api/proofs/${encodeURIComponent(expense.id)}`);
+      const payload = (await response.json()) as { url?: string; contentType?: string; message?: string };
+      if (!response.ok || !payload.url) throw new Error(payload.message ?? "Could not open proof");
+      setProofViewer({ expense, url: payload.url, contentType: payload.contentType ?? "image/*" });
+    } catch (error) {
+      showToast(error instanceof Error ? error.message : "Could not open proof");
+    }
+  };
+
   if (!ready) {
     return <main className="app-loading" aria-live="polite"><Image className="brand-symbol" src="/icon.png" alt="" width={40} height={40} priority /><span>Opening your workspace…</span></main>;
   }
@@ -448,6 +467,7 @@ export function SpendingTracker() {
             onViewAll={() => navigate("activity")}
             onReportExpense={reportExpense}
             onDeleteExpense={deleteExpense}
+            onViewProof={viewProof}
           />
         )}
 
@@ -464,6 +484,7 @@ export function SpendingTracker() {
             currentMember={currentMember}
             onReportExpense={reportExpense}
             onDeleteExpense={deleteExpense}
+            onViewProof={viewProof}
           />
         )}
 
@@ -494,6 +515,8 @@ export function SpendingTracker() {
           onSubmit={addExpense}
         />
       )}
+
+      {proofViewer && <ProofViewer proof={proofViewer} onClose={() => setProofViewer(null)} />}
 
       {toast && <div className="toast" role="status">{toast}</div>}
     </div>
@@ -558,7 +581,7 @@ function BottomNav({ tab, isAdmin, onNavigate, onAdd }: { tab: Tab; isAdmin: boo
   );
 }
 
-function HomeDashboard({ expenses, members, settings, currentMember, totalSpend, cashSpend, digitalSpend, onAdd, onViewAll, onReportExpense, onDeleteExpense }: {
+function HomeDashboard({ expenses, members, settings, currentMember, totalSpend, cashSpend, digitalSpend, onAdd, onViewAll, onReportExpense, onDeleteExpense, onViewProof }: {
   expenses: Expense[];
   members: Member[];
   settings: TeamSettings;
@@ -570,6 +593,7 @@ function HomeDashboard({ expenses, members, settings, currentMember, totalSpend,
   onViewAll: () => void;
   onReportExpense: (expenseId: string) => void;
   onDeleteExpense: (expenseId: string) => void;
+  onViewProof: (expense: Expense) => void;
 }) {
   const activeMembers = members.filter((member) => member.status === "active").length;
   const displayExpenses = expenses.filter((expense) => expense.currency === settings.currency);
@@ -632,14 +656,14 @@ function HomeDashboard({ expenses, members, settings, currentMember, totalSpend,
 
         <article className="expense-panel">
           <div className="section-head"><div><h2>Recent expenses</h2><p>Latest team activity</p></div><button className="text-button icon-text-button" onClick={onViewAll}>View all<ArrowRight size={15} aria-hidden="true" /></button></div>
-          <ExpenseList expenses={expenses.slice(0, 5)} members={members} settings={settings} currentMember={currentMember} onReportExpense={onReportExpense} onDeleteExpense={onDeleteExpense} />
+          <ExpenseList expenses={expenses.slice(0, 5)} members={members} settings={settings} currentMember={currentMember} onReportExpense={onReportExpense} onDeleteExpense={onDeleteExpense} onViewProof={onViewProof} />
         </article>
       </section>
     </>
   );
 }
 
-function ActivityView({ expenses, members, settings, search, categoryFilter, onSearch, onFilter, onAdd, currentMember, onReportExpense, onDeleteExpense }: {
+function ActivityView({ expenses, members, settings, search, categoryFilter, onSearch, onFilter, onAdd, currentMember, onReportExpense, onDeleteExpense, onViewProof }: {
   expenses: Expense[];
   members: Member[];
   settings: TeamSettings;
@@ -651,6 +675,7 @@ function ActivityView({ expenses, members, settings, search, categoryFilter, onS
   currentMember: Member;
   onReportExpense: (expenseId: string) => void;
   onDeleteExpense: (expenseId: string) => void;
+  onViewProof: (expense: Expense) => void;
 }) {
   return (
     <>
@@ -664,13 +689,13 @@ function ActivityView({ expenses, members, settings, search, categoryFilter, onS
       </div>
       <section className="expense-panel">
         <div className="section-head"><div><h2>{categoryFilter === "All" ? "All spending" : categoryFilter}</h2><p>{expenses.length} expense{expenses.length === 1 ? "" : "s"}{settings.currencies.length > 1 ? ` · ${settings.currency} total` : ""}</p></div><strong>{formatMoney(expenses.filter((item) => item.currency === settings.currency).reduce((sum, item) => sum + item.amount, 0), settings.currency)}</strong></div>
-        <ExpenseList expenses={expenses} members={members} settings={settings} currentMember={currentMember} onReportExpense={onReportExpense} onDeleteExpense={onDeleteExpense} />
+        <ExpenseList expenses={expenses} members={members} settings={settings} currentMember={currentMember} onReportExpense={onReportExpense} onDeleteExpense={onDeleteExpense} onViewProof={onViewProof} />
       </section>
     </>
   );
 }
 
-function ExpenseList({ expenses, members, settings, currentMember, onReportExpense, onDeleteExpense }: { expenses: Expense[]; members: Member[]; settings: TeamSettings; currentMember: Member; onReportExpense: (expenseId: string) => void; onDeleteExpense: (expenseId: string) => void }) {
+function ExpenseList({ expenses, members, settings, currentMember, onReportExpense, onDeleteExpense, onViewProof }: { expenses: Expense[]; members: Member[]; settings: TeamSettings; currentMember: Member; onReportExpense: (expenseId: string) => void; onDeleteExpense: (expenseId: string) => void; onViewProof: (expense: Expense) => void }) {
   if (!expenses.length) return <div className="empty-state">No expenses match this view.</div>;
   return (
     <div className="expense-list">
@@ -689,6 +714,7 @@ function ExpenseList({ expenses, members, settings, currentMember, onReportExpen
               <div className="expense-number"><strong>{formatMoney(expense.amount, expense.currency)}</strong><span className="payment-label"><PaymentIcon size={12} strokeWidth={1.9} aria-hidden="true" />{PAYMENT_LABELS[expense.paymentMethod]}</span></div>
               <div className="expense-actions">
                 {expense.status === "issue" && <span className="issue-badge"><Flag size={12} aria-hidden="true" />Issue</span>}
+                {expense.proofUrl && <button type="button" className="expense-action proof-action" onClick={() => onViewProof(expense)}><Eye size={15} aria-hidden="true" /><span>View proof</span></button>}
                 {currentMember.role === "admin" ? <button type="button" className="expense-action danger" onClick={() => onDeleteExpense(expense.id)} aria-label={`Delete ${expense.merchant}`} title="Delete expense"><Trash2 size={15} aria-hidden="true" /></button> : expense.spenderId === currentMember.id && expense.status !== "issue" ? <button type="button" className="expense-action report" onClick={() => onReportExpense(expense.id)} aria-label={`Report an issue with ${expense.merchant}`} title="Report an issue"><Flag size={15} aria-hidden="true" /><span>Report issue</span></button> : null}
               </div>
             </div>
@@ -710,6 +736,26 @@ type ExpenseFormValue = {
   notes: string;
   proof: File | null;
 };
+
+function ProofViewer({ proof, onClose }: { proof: ProofViewerValue; onClose: () => void }) {
+  const isPdf = proof.contentType.includes("pdf");
+  useEffect(() => {
+    const closeOnEscape = (event: KeyboardEvent) => { if (event.key === "Escape") onClose(); };
+    document.addEventListener("keydown", closeOnEscape);
+    return () => document.removeEventListener("keydown", closeOnEscape);
+  }, [onClose]);
+
+  return createPortal(
+    <div className="proof-viewer-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) onClose(); }}>
+      <section className="proof-viewer" role="dialog" aria-modal="true" aria-label={`Proof for ${proof.expense.merchant}`}>
+        <div className="proof-viewer-head"><div><p className="eyebrow">Proof of spending</p><h2>{proof.expense.merchant}</h2></div><button type="button" className="close-button" onClick={onClose} aria-label="Close proof"><X size={19} strokeWidth={1.9} aria-hidden="true" /></button></div>
+        <div className="proof-viewer-media">{isPdf ? <iframe src={proof.url} title={`Proof for ${proof.expense.merchant}`} /> : <img src={proof.url} alt={`Proof of spending for ${proof.expense.merchant}`} />}</div>
+        <a className="secondary-button full" href={proof.url} target="_blank" rel="noreferrer"><Globe2 size={16} aria-hidden="true" />Open in new tab</a>
+      </section>
+    </div>,
+    document.body,
+  );
+}
 
 function ExpenseModal({ members, settings, onClose, onSubmit }: {
   members: Member[];

@@ -32,6 +32,7 @@ type SupabaseExpenseRow = {
   spent_at: string;
   spender_id: string;
   proof_path: string | null;
+  proof_type: string | null;
   notes: string | null;
   status: "logged" | "issue";
 };
@@ -317,6 +318,19 @@ export async function uploadProof(path: string, file: File) {
 export async function deleteProof(path: string) {
   const { url, key, bucket } = config();
   await fetch(`${url}/storage/v1/object/${bucket}/${path}`, { method: "DELETE", headers: { apikey: key, authorization: `Bearer ${key}` } });
+}
+
+export async function createProofSignedUrl(path: string) {
+  const { url, key, bucket } = config();
+  const response = await fetch(`${url}/storage/v1/object/sign/${bucket}/${path}`, {
+    method: "POST",
+    headers: { apikey: key, authorization: `Bearer ${key}`, "content-type": "application/json" },
+    body: JSON.stringify({ expiresIn: 120 }),
+  });
+  if (!response.ok) throw new ApiError("The receipt proof could not be opened", 502);
+  const payload = (await response.json()) as { signedURL?: string };
+  if (!payload.signedURL) throw new ApiError("The receipt proof could not be opened", 502);
+  return `${url}/storage/v1${payload.signedURL}`;
 }
 
 export function errorResponse(error: unknown) {
