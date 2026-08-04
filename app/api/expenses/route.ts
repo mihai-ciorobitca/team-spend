@@ -17,6 +17,7 @@ export async function POST(request: Request) {
     const form = await request.formData();
     const merchant = String(form.get("merchant") ?? "").trim();
     const amount = Number(form.get("amount"));
+    const currency = String(form.get("currency") ?? "");
     const category = String(form.get("category") ?? "");
     const paymentMethod = String(form.get("paymentMethod") ?? "");
     const spentAt = String(form.get("spentAt") ?? "");
@@ -31,6 +32,7 @@ export async function POST(request: Request) {
     if (!/^\d{4}-\d{2}-\d{2}$/.test(spentAt)) return Response.json({ message: "Choose a valid spending date" }, { status: 400 });
 
     const [team, teamMembers] = await Promise.all([getTeam(current.team_id), getMembers(current.team_id)]);
+    if (!(team.allowed_currencies ?? [team.currency]).includes(currency)) return Response.json({ message: "Choose an enabled currency" }, { status: 400 });
     if (!teamMembers.some((member) => member.id === spenderId && member.status === "active" && member.role === "member")) return Response.json({ message: "Choose an active team member" }, { status: 400 });
     if (current.role !== "admin" && spenderId !== current.id) return Response.json({ message: "Members can only submit their own spending" }, { status: 403 });
 
@@ -53,6 +55,7 @@ export async function POST(request: Request) {
         created_by: current.id,
         merchant,
         amount,
+        currency,
         category,
         payment_method: paymentMethod,
         spent_at: spentAt,

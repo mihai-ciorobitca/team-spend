@@ -53,6 +53,7 @@ type Expense = {
   id: string;
   merchant: string;
   amount: number;
+  currency: string;
   category: string;
   paymentMethod: PaymentMethod;
   spentAt: string;
@@ -64,6 +65,7 @@ type Expense = {
 type TeamSettings = {
   teamName: string;
   currency: string;
+  currencies: string[];
   requireProof: boolean;
 };
 
@@ -84,19 +86,20 @@ const DEMO_MEMBERS: Member[] = [
 ];
 
 const DEMO_EXPENSES: Expense[] = [
-  { id: "e-1", merchant: "CloudNine Software", amount: 3790, category: "Software", paymentMethod: "card", spentAt: "2026-08-03", spenderId: "m-rog", proofUrl: "proof" },
-  { id: "e-2", merchant: "Team lunch · Savoey", amount: 3000, category: "Meals", paymentMethod: "wallet", spentAt: "2026-08-02", spenderId: "m-maya", proofUrl: "proof" },
-  { id: "e-3", merchant: "Client welcome gifts", amount: 2885, category: "Other", paymentMethod: "bank_transfer", spentAt: "2026-08-02", spenderId: "m-niko", proofUrl: "proof" },
-  { id: "e-4", merchant: "AIS Business", amount: 2140, category: "Utilities", paymentMethod: "card", spentAt: "2026-08-01", spenderId: "m-rog", proofUrl: "proof" },
-  { id: "e-5", merchant: "Grab for Business", amount: 1240, category: "Transport", paymentMethod: "wallet", spentAt: "2026-08-01", spenderId: "m-maya", proofUrl: "proof" },
-  { id: "e-6", merchant: "B2S stationery", amount: 865, category: "Supplies", paymentMethod: "cash", spentAt: "2026-07-31", spenderId: "m-niko", proofUrl: "proof" },
-  { id: "e-7", merchant: "Common Ground café", amount: 480, category: "Meals", paymentMethod: "cash", spentAt: "2026-07-30", spenderId: "m-rog", proofUrl: "proof" },
-  { id: "e-8", merchant: "Workshop snacks", amount: 420, category: "Meals", paymentMethod: "cash", spentAt: "2026-07-29", spenderId: "m-maya", proofUrl: "proof" },
+  { id: "e-1", merchant: "CloudNine Software", amount: 3790, currency: "EUR", category: "Software", paymentMethod: "card", spentAt: "2026-08-03", spenderId: "m-rog", proofUrl: "proof" },
+  { id: "e-2", merchant: "Team lunch · Savoey", amount: 3000, currency: "EUR", category: "Meals", paymentMethod: "wallet", spentAt: "2026-08-02", spenderId: "m-maya", proofUrl: "proof" },
+  { id: "e-3", merchant: "Client welcome gifts", amount: 2885, currency: "EUR", category: "Other", paymentMethod: "bank_transfer", spentAt: "2026-08-02", spenderId: "m-niko", proofUrl: "proof" },
+  { id: "e-4", merchant: "AIS Business", amount: 2140, currency: "EUR", category: "Utilities", paymentMethod: "card", spentAt: "2026-08-01", spenderId: "m-rog", proofUrl: "proof" },
+  { id: "e-5", merchant: "Grab for Business", amount: 1240, currency: "EUR", category: "Transport", paymentMethod: "wallet", spentAt: "2026-08-01", spenderId: "m-maya", proofUrl: "proof" },
+  { id: "e-6", merchant: "B2S stationery", amount: 865, currency: "EUR", category: "Supplies", paymentMethod: "cash", spentAt: "2026-07-31", spenderId: "m-niko", proofUrl: "proof" },
+  { id: "e-7", merchant: "Common Ground café", amount: 480, currency: "EUR", category: "Meals", paymentMethod: "cash", spentAt: "2026-07-30", spenderId: "m-rog", proofUrl: "proof" },
+  { id: "e-8", merchant: "Workshop snacks", amount: 420, currency: "EUR", category: "Meals", paymentMethod: "cash", spentAt: "2026-07-29", spenderId: "m-maya", proofUrl: "proof" },
 ];
 
 const DEFAULT_SETTINGS: TeamSettings = {
   teamName: "Northstar Studio",
   currency: "EUR",
+  currencies: ["EUR"],
   requireProof: true,
 };
 
@@ -305,8 +308,9 @@ export function SpendingTracker() {
     return () => window.clearTimeout(timeout);
   }, [toast]);
 
-  const totalSpend = useMemo(() => expenses.reduce((sum, expense) => sum + expense.amount, 0), [expenses]);
-  const cashSpend = useMemo(() => expenses.filter((expense) => expense.paymentMethod === "cash").reduce((sum, expense) => sum + expense.amount, 0), [expenses]);
+  const primaryExpenses = useMemo(() => expenses.filter((expense) => expense.currency === settings.currency), [expenses, settings.currency]);
+  const totalSpend = useMemo(() => primaryExpenses.reduce((sum, expense) => sum + expense.amount, 0), [primaryExpenses]);
+  const cashSpend = useMemo(() => primaryExpenses.filter((expense) => expense.paymentMethod === "cash").reduce((sum, expense) => sum + expense.amount, 0), [primaryExpenses]);
   const digitalSpend = totalSpend - cashSpend;
   const filteredExpenses = useMemo(() => {
     const term = search.trim().toLowerCase();
@@ -333,6 +337,7 @@ export function SpendingTracker() {
         id: `demo-${Date.now()}`,
         merchant: form.merchant,
         amount: Number(form.amount),
+        currency: form.currency,
         category: form.category,
         paymentMethod: form.paymentMethod,
         spentAt: form.spentAt,
@@ -349,6 +354,7 @@ export function SpendingTracker() {
     const body = new FormData();
     body.set("merchant", form.merchant);
     body.set("amount", form.amount);
+    body.set("currency", form.currency);
     body.set("category", form.category);
     body.set("paymentMethod", form.paymentMethod);
     body.set("spentAt", form.spentAt);
@@ -521,10 +527,11 @@ function HomeDashboard({ expenses, members, settings, currentMember, totalSpend,
   onViewAll: () => void;
 }) {
   const activeMembers = members.filter((member) => member.status === "active").length;
-  const expensesWithProof = expenses.filter((expense) => expense.proofUrl).length;
+  const displayExpenses = expenses.filter((expense) => expense.currency === settings.currency);
+  const expensesWithProof = displayExpenses.filter((expense) => expense.proofUrl).length;
   const categories = CATEGORIES.map((category) => ({
     category,
-    amount: expenses.filter((expense) => expense.category === category).reduce((sum, expense) => sum + expense.amount, 0),
+    amount: displayExpenses.filter((expense) => expense.category === category).reduce((sum, expense) => sum + expense.amount, 0),
   })).filter((item) => item.amount > 0).sort((a, b) => b.amount - a.amount).slice(0, 4);
 
   return (
@@ -533,16 +540,16 @@ function HomeDashboard({ expenses, members, settings, currentMember, totalSpend,
         <div>
           <p className="eyebrow">August overview</p>
           <h1 className="page-heading">Welcome, {currentMember.name.split(" ")[0]}.</h1>
-          <p className="intro-copy">Your team has logged {expenses.length} expenses this month.</p>
+          <p className="intro-copy">Your team has logged {expenses.length} expenses this month{settings.currencies.length > 1 ? ` · totals shown in ${settings.currency}` : ""}.</p>
         </div>
         <button className="primary-button desktop-add" onClick={onAdd}><Plus size={17} aria-hidden="true" />Add expense</button>
       </div>
 
       <section className="summary-grid" aria-label="Monthly spending summary">
         <article className="hero-card">
-          <p className="hero-label">Total team spend</p>
+          <p className="hero-label">Total {settings.currency} team spend</p>
           <h2 className="hero-amount">{formatMoney(totalSpend, settings.currency)}</h2>
-          <div className="hero-meta"><span className="hero-meta-dot" /><span>{expenses.length} recorded expense{expenses.length === 1 ? "" : "s"}</span></div>
+          <div className="hero-meta"><span className="hero-meta-dot" /><span>{displayExpenses.length} {settings.currency} expense{displayExpenses.length === 1 ? "" : "s"}</span></div>
           <div className="hero-insight"><strong>{activeMembers}</strong><span>active member{activeMembers === 1 ? "" : "s"}</span></div>
         </article>
         <div className="mini-grid">
@@ -575,7 +582,7 @@ function HomeDashboard({ expenses, members, settings, currentMember, totalSpend,
             })}
             {!categories.length && <div className="category-empty">Categories will appear after the first expense.</div>}
           </div>
-          <div className="category-footnote"><span className="proof-dot" />{expensesWithProof} expense{expensesWithProof === 1 ? "" : "s"} with proof</div>
+          <div className="category-footnote"><span className="proof-dot" />{expensesWithProof} {settings.currency} expense{expensesWithProof === 1 ? "" : "s"} with proof</div>
         </article>
 
         <article className="expense-panel">
@@ -608,7 +615,7 @@ function ActivityView({ expenses, members, settings, search, categoryFilter, onS
         {["All", ...CATEGORIES].map((category) => <button key={category} className={`filter-chip ${categoryFilter === category ? "active" : ""}`} onClick={() => onFilter(category)}>{category}</button>)}
       </div>
       <section className="expense-panel">
-        <div className="section-head"><div><h2>{categoryFilter === "All" ? "All spending" : categoryFilter}</h2><p>{expenses.length} expense{expenses.length === 1 ? "" : "s"}</p></div><strong>{formatMoney(expenses.reduce((sum, item) => sum + item.amount, 0), settings.currency)}</strong></div>
+        <div className="section-head"><div><h2>{categoryFilter === "All" ? "All spending" : categoryFilter}</h2><p>{expenses.length} expense{expenses.length === 1 ? "" : "s"}{settings.currencies.length > 1 ? ` · ${settings.currency} total` : ""}</p></div><strong>{formatMoney(expenses.filter((item) => item.currency === settings.currency).reduce((sum, item) => sum + item.amount, 0), settings.currency)}</strong></div>
         <ExpenseList expenses={expenses} members={members} settings={settings} />
       </section>
     </>
@@ -630,7 +637,7 @@ function ExpenseList({ expenses, members, settings }: { expenses: Expense[]; mem
               <p className="expense-title">{expense.merchant}</p>
               <p className="expense-subtitle"><span>{member?.name ?? "Team member"}</span><span>·</span><span>{displayDate(expense.spentAt)}</span>{expense.proofUrl && <><span>·</span><span className="proof-dot" title="Proof attached" /></>}</p>
             </div>
-            <div className="expense-number"><strong>{formatMoney(expense.amount, settings.currency)}</strong><span className="payment-label"><PaymentIcon size={12} strokeWidth={1.9} aria-hidden="true" />{PAYMENT_LABELS[expense.paymentMethod]}</span></div>
+            <div className="expense-number"><strong>{formatMoney(expense.amount, expense.currency)}</strong><span className="payment-label"><PaymentIcon size={12} strokeWidth={1.9} aria-hidden="true" />{PAYMENT_LABELS[expense.paymentMethod]}</span></div>
           </div>
         );
       })}
@@ -641,6 +648,7 @@ function ExpenseList({ expenses, members, settings }: { expenses: Expense[]; mem
 type ExpenseFormValue = {
   merchant: string;
   amount: string;
+  currency: string;
   category: string;
   paymentMethod: PaymentMethod;
   spentAt: string;
@@ -658,6 +666,7 @@ function ExpenseModal({ members, settings, onClose, onSubmit }: {
   const [value, setValue] = useState<ExpenseFormValue>({
     merchant: "",
     amount: "",
+    currency: settings.currencies[0] ?? settings.currency,
     category: "Meals",
     paymentMethod: "cash",
     spentAt: todayValue(),
@@ -706,10 +715,11 @@ function ExpenseModal({ members, settings, onClose, onSubmit }: {
     <div className="modal-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) onClose(); }}>
       <form className="expense-modal" onSubmit={submit} aria-label="Add expense" role="dialog" aria-modal="true">
         <div className="modal-head"><div><p className="eyebrow">New spending</p><h2>Add an expense</h2></div><button type="button" className="close-button" onClick={onClose} aria-label="Close"><X size={19} strokeWidth={1.9} aria-hidden="true" /></button></div>
-        <label className="amount-field"><span>{settings.currency}</span><input autoFocus inputMode="decimal" placeholder="0" aria-label="Amount" value={value.amount} onChange={(event) => setValue({ ...value, amount: event.target.value })} /></label>
+        <label className="amount-field"><span>{value.currency}</span><input autoFocus inputMode="decimal" placeholder="0" aria-label="Amount" value={value.amount} onChange={(event) => setValue({ ...value, amount: event.target.value })} /></label>
 
         <div className="field-grid">
           <div className="field"><span className="field-label">How was it paid?</span><div className="segmented">{(Object.keys(PAYMENT_LABELS) as PaymentMethod[]).map((method) => { const PaymentIcon = PAYMENT_ICONS[method]; return <button key={method} type="button" className={`segment-button ${value.paymentMethod === method ? "active" : ""}`} onClick={() => setValue({ ...value, paymentMethod: method })}><PaymentIcon size={16} strokeWidth={1.9} aria-hidden="true" />{PAYMENT_LABELS[method]}</button>; })}</div></div>
+          {settings.currencies.length > 1 && <div className="field"><label htmlFor="expense-currency">Currency</label><Dropdown id="expense-currency" value={value.currency} options={CURRENCY_OPTIONS.filter((option) => settings.currencies.includes(option.value))} onChange={(currency) => setValue({ ...value, currency })} /></div>}
           <div className="field"><span className="field-label">Who spent it?</span><div className="member-picker">{members.map((member) => <button key={member.id} type="button" className={`member-pill ${value.spenderId === member.id ? "active" : ""}`} onClick={() => setValue({ ...value, spenderId: member.id })}><span className="avatar small" style={avatarStyle(member.avatarColor)}>{initials(member.name)}</span><span>{member.name.split(" ")[0]}</span></button>)}</div></div>
           <div className="field-grid two">
             <div className="field"><label htmlFor="merchant">Merchant or reason</label><input id="merchant" value={value.merchant} onChange={(event) => setValue({ ...value, merchant: event.target.value })} placeholder="e.g. Taxi to client" /></div>
@@ -868,7 +878,7 @@ function AdminView({ configured, members, settings, currentMember, onMembersChan
           {!configured && <div className="setup-box"><h3>Connect Supabase to go live</h3><p>The interface is running with demo data. Your private proof bucket and team tables are already prepared in the project.</p><ol className="setup-steps"><li><span className="step-number">1</span>Run the included schema in Supabase</li><li><span className="step-number">2</span>Add the project URL and service key</li><li><span className="step-number">3</span>Refresh — your first admin is created</li></ol></div>}
           <div className="settings-form" style={{ marginTop: 18 }}>
             <div className="field"><label htmlFor="team-name">Team name</label><input id="team-name" value={settings.teamName} onChange={(event) => onSettingsChange({ ...settings, teamName: event.target.value })} /></div>
-            <div className="field"><label htmlFor="currency">Currency</label><Dropdown id="currency" value={settings.currency} options={CURRENCY_OPTIONS} onChange={(currency) => onSettingsChange({ ...settings, currency })} /></div>
+            <div className="field"><span className="field-label">Available currencies</span><div className="currency-selector">{CURRENCY_OPTIONS.map((option) => { const enabled = settings.currencies.includes(option.value); return <button key={option.value} type="button" className={`currency-option ${enabled ? "active" : ""}`} onClick={() => { const currencies = enabled ? settings.currencies.filter((currency) => currency !== option.value) : [...settings.currencies, option.value]; if (currencies.length) onSettingsChange({ ...settings, currency: currencies[0], currencies }); }} aria-pressed={enabled}>{enabled && <Check size={15} aria-hidden="true" />}{option.label}</button>; })}</div><span className="field-hint">Choose every currency team members can use when recording spending.</span></div>
             <div className="toggle-row"><div className="toggle-copy"><strong>Require proof of spending</strong><span>Receipt photo or payment screenshot</span></div><div className="toggle-action"><span>{settings.requireProof ? "Required" : "Optional"}</span><button type="button" className={`toggle ${settings.requireProof ? "on" : ""}`} onClick={() => onSettingsChange({ ...settings, requireProof: !settings.requireProof })} aria-label="Toggle required proof" aria-pressed={settings.requireProof} /></div></div>
             <button className="primary-button dark full" onClick={saveSettings} disabled={saving}>{!saving && <Save size={16} aria-hidden="true" />}{saving ? "Saving…" : "Save settings"}</button>
           </div>

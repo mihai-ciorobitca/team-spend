@@ -7,6 +7,7 @@ create table if not exists public.teams (
   id uuid primary key default gen_random_uuid(),
   name text not null default 'My Team' check (char_length(name) between 1 and 100),
   currency text not null default 'EUR' check (currency in ('EUR', 'VND')),
+  allowed_currencies text[] not null default array['EUR']::text[] check (allowed_currencies <@ array['EUR', 'VND']::text[] and cardinality(allowed_currencies) > 0),
   require_proof boolean not null default true,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
@@ -34,6 +35,7 @@ create table if not exists public.expenses (
   created_by uuid not null references public.team_members(id),
   merchant text not null check (char_length(merchant) between 1 and 160),
   amount numeric(14,2) not null check (amount > 0),
+  currency text not null default 'EUR' check (currency in ('EUR', 'VND')),
   category text not null check (category in ('Meals', 'Transport', 'Software', 'Supplies', 'Utilities', 'Travel', 'Other')),
   payment_method text not null check (payment_method in ('cash', 'card', 'bank_transfer', 'wallet')),
   spent_at date not null default current_date,
@@ -94,6 +96,8 @@ on conflict (id) do update set
 
 -- Keep existing projects aligned when this schema is run again.
 alter table public.team_members add column if not exists password_hash text;
+alter table public.teams add column if not exists allowed_currencies text[] not null default array['EUR']::text[];
+alter table public.expenses add column if not exists currency text not null default 'EUR';
 update public.teams
 set currency = 'EUR'
 where currency not in ('EUR', 'VND');

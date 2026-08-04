@@ -20,6 +20,8 @@ Without Supabase environment values, the interface runs in a clearly marked demo
 
 Peptiking supports Euro and Vietnamese đồng. Existing unsupported currency settings automatically switch to Euro; [`supabase/migrations/20260804_eur_vnd_only.sql`](supabase/migrations/20260804_eur_vnd_only.sql) can be run once to enforce the same rule directly in Supabase.
 
+To let an admin enable one or both currencies, run [`supabase/migrations/20260804_multiple_currencies.sql`](supabase/migrations/20260804_multiple_currencies.sql) once in the Supabase SQL editor for an existing project.
+
 ## Password protection
 
 Set `SITE_PASSWORD` in the production environment as the private admin password and session-signing secret. Members sign in with the individual passwords assigned in Admin. Access is remembered for seven days in a secure, HttpOnly cookie. Changing `SITE_PASSWORD` invalidates existing sessions after redeployment.

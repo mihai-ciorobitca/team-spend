@@ -13,6 +13,7 @@ type SupabaseTeamRow = {
   id: string;
   name: string;
   currency: string;
+  allowed_currencies?: string[] | null;
   require_proof: boolean;
 };
 
@@ -25,6 +26,7 @@ type SupabaseExpenseRow = {
   id: string;
   merchant: string;
   amount: number | string;
+  currency?: string | null;
   category: string;
   payment_method: "cash" | "card" | "bank_transfer" | "wallet";
   spent_at: string;
@@ -46,6 +48,7 @@ export type Member = {
 export type TeamSettings = {
   teamName: string;
   currency: string;
+  currencies: string[];
   requireProof: boolean;
 };
 
@@ -53,6 +56,7 @@ export type Expense = {
   id: string;
   merchant: string;
   amount: number;
+  currency: string;
   category: string;
   paymentMethod: "cash" | "card" | "bank_transfer" | "wallet";
   spentAt: string;
@@ -223,9 +227,11 @@ export function mapMember(row: SupabaseMemberRow): Member {
 }
 
 export function mapSettings(row: SupabaseTeamRow): TeamSettings {
+  const currencies = (row.allowed_currencies ?? [row.currency]).filter((currency) => SUPPORTED_CURRENCIES.has(currency));
   return {
     teamName: row.name,
-    currency: row.currency,
+    currency: currencies[0] ?? "EUR",
+    currencies: currencies.length ? currencies : ["EUR"],
     requireProof: row.require_proof,
   };
 }
@@ -235,6 +241,7 @@ export function mapExpense(row: SupabaseExpenseRow, proofUrl: string | null = ro
     id: row.id,
     merchant: row.merchant,
     amount: Number(row.amount),
+    currency: SUPPORTED_CURRENCIES.has(row.currency ?? "") ? row.currency! : "EUR",
     category: row.category,
     paymentMethod: row.payment_method,
     spentAt: row.spent_at,
@@ -247,12 +254,18 @@ export function mapExpense(row: SupabaseExpenseRow, proofUrl: string | null = ro
 export async function getTeam(teamId: string) {
   const rows = await supabaseRequest<SupabaseTeamRow[]>(`/rest/v1/teams?id=eq.${encodeURIComponent(teamId)}&select=*&limit=1`);
   if (!rows[0]) throw new ApiError("Team settings were not found", 404);
-  if (!SUPPORTED_CURRENCIES.has(rows[0].currency)) {
+  const allowedCurrencies = (rows[0].allowed_currencies ?? [rows[0].currency]).filter((currency) => SUPPORTED_CURRENCIES.has(currency));
+  const normalizedCurrencies = allowedCurrencies.length ? allowedCurrencies : ["EUR"];
+  if (
+    !SUPPORTED_CURRENCIES.has(rows[0].currency) ||
+    rows[0].currency !== normalizedCurrencies[0] ||
+    rows[0].allowed_currencies?.join("|") !== normalizedCurrencies.join("|")
+  ) {
     const normalized = await supabaseRequest<SupabaseTeamRow[]>(
       `/rest/v1/teams?id=eq.${encodeURIComponent(teamId)}&select=*`,
-      { method: "PATCH", headers: { Prefer: "return=representation" }, body: JSON.stringify({ currency: "EUR" }) },
+      { method: "PATCH", headers: { Prefer: "return=representation" }, body: JSON.stringify({ currency: normalizedCurrencies[0], allowed_currencies: normalizedCurrencies }) },
     );
-    return normalized[0] ?? { ...rows[0], currency: "EUR" };
+    return normalized[0] ?? { ...rows[0], currency: normalizedCurrencies[0], allowed_currencies: normalizedCurrencies };
   }
   return rows[0];
 }
