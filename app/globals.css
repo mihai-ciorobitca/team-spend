@@ -1943,8 +1943,13 @@ body {
 
 .search-box {
   min-height: 48px;
+  margin-bottom: 14px;
   border-radius: 9px;
   box-shadow: none;
+}
+
+.filter-row {
+  margin-bottom: 20px;
 }
 
 .filter-chip {
