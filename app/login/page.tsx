@@ -25,7 +25,7 @@ export default async function LoginPage({ searchParams }: {
         <div className="login-lock" aria-hidden="true"><span /></div>
         <p className="eyebrow">Private workspace</p>
         <h1>Team access only.</h1>
-        <p className="login-copy">Enter the shared password to view spending, receipts, and team settings.</p>
+        <p className="login-copy">Everyone on the team uses this same website password. Member emails do not need separate login setup or passwords.</p>
 
         {showSetup ? (
           <div className="login-alert setup" role="alert">

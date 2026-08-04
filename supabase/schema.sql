@@ -18,7 +18,7 @@ create table if not exists public.team_members (
   email text not null,
   full_name text not null check (char_length(full_name) between 1 and 120),
   role text not null default 'member' check (role in ('admin', 'member')),
-  status text not null default 'invited' check (status in ('active', 'invited', 'inactive')),
+  status text not null default 'active' check (status in ('active', 'inactive')),
   auth_provider_id text,
   avatar_color text not null default '#a9d9c7',
   created_at timestamptz not null default now(),

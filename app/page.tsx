@@ -15,8 +15,8 @@ export default async function Home() {
   return (
     <SpendingTracker
       viewer={{
-        name: user?.displayName ?? "Rog",
-        email: user?.email ?? "owner@local.demo",
+        name: user?.displayName ?? "Shared access",
+        email: user?.email ?? "shared@peptiking.local",
       }}
     />
   );

@@ -211,7 +211,15 @@ export async function getTeam(teamId: string) {
 }
 
 export async function getMembers(teamId: string) {
-  return supabaseRequest<SupabaseMemberRow[]>(`/rest/v1/team_members?team_id=eq.${encodeURIComponent(teamId)}&select=*&order=created_at.asc`);
+  const rows = await supabaseRequest<SupabaseMemberRow[]>(`/rest/v1/team_members?team_id=eq.${encodeURIComponent(teamId)}&select=*&order=created_at.asc`);
+  if (!rows.some((member) => member.status === "invited")) return rows;
+
+  const activated = await supabaseRequest<SupabaseMemberRow[]>(
+    `/rest/v1/team_members?team_id=eq.${encodeURIComponent(teamId)}&status=eq.invited&select=*`,
+    { method: "PATCH", headers: { Prefer: "return=representation" }, body: JSON.stringify({ status: "active" }) },
+  );
+  const activatedById = new Map(activated.map((member) => [member.id, member]));
+  return rows.map((member) => activatedById.get(member.id) ?? member);
 }
 
 export async function getExpenses(teamId: string) {

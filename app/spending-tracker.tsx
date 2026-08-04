@@ -11,7 +11,7 @@ type Member = {
   name: string;
   email: string;
   role: Role;
-  status: "active" | "invited" | "inactive";
+  status: "active" | "inactive";
   avatarColor: string;
 };
 
@@ -46,7 +46,7 @@ const DEMO_MEMBERS: Member[] = [
   { id: "m-rog", name: "Rog", email: "owner@local.demo", role: "admin", status: "active", avatarColor: "#f3bf73" },
   { id: "m-maya", name: "Maya Chen", email: "maya@northstar.team", role: "member", status: "active", avatarColor: "#a9d9c7" },
   { id: "m-niko", name: "Niko Rahman", email: "niko@northstar.team", role: "member", status: "active", avatarColor: "#f5a98c" },
-  { id: "m-lena", name: "Lena Park", email: "lena@northstar.team", role: "member", status: "invited", avatarColor: "#c5b8e8" },
+  { id: "m-lena", name: "Lena Park", email: "lena@northstar.team", role: "member", status: "active", avatarColor: "#c5b8e8" },
 ];
 
 const DEMO_EXPENSES: Expense[] = [
@@ -330,7 +330,7 @@ export function SpendingTracker({ viewer }: { viewer: { name: string; email: str
       />
 
       <main className="main-canvas">
-        <MobileTopbar member={currentMember} />
+        <MobileTopbar viewer={viewer} />
         {!configured && (
           <div className="demo-banner">
             <span>Demo data</span>
@@ -341,7 +341,6 @@ export function SpendingTracker({ viewer }: { viewer: { name: string; email: str
 
         {tab === "home" && (
           <HomeDashboard
-            currentMember={currentMember}
             expenses={expenses}
             members={members}
             settings={settings}
@@ -385,7 +384,6 @@ export function SpendingTracker({ viewer }: { viewer: { name: string; email: str
         <ExpenseModal
           members={members.filter((member) => member.status === "active")}
           settings={settings}
-          currentMember={currentMember}
           onClose={() => setAddOpen(false)}
           onSubmit={addExpense}
         />
@@ -419,11 +417,11 @@ function Sidebar({ tab, teamName, member, viewer, onNavigate }: {
   );
 }
 
-function MobileTopbar({ member }: { member: Member }) {
+function MobileTopbar({ viewer }: { viewer: { name: string; email: string } }) {
   return (
     <header className="mobile-topbar">
       <div className="brand"><span className="brand-mark">P</span><span>Peptiking</span></div>
-      <span className="avatar" style={avatarStyle(member.avatarColor)}>{initials(member.name)}</span>
+      <span className="avatar" style={avatarStyle("#a9d9c7")}>{initials(viewer.name)}</span>
     </header>
   );
 }
@@ -446,8 +444,7 @@ function BottomNav({ tab, onNavigate, onAdd }: { tab: Tab; onNavigate: (tab: Tab
   );
 }
 
-function HomeDashboard({ currentMember, expenses, members, settings, totalSpend, cashSpend, digitalSpend, onAdd, onViewAll }: {
-  currentMember: Member;
+function HomeDashboard({ expenses, members, settings, totalSpend, cashSpend, digitalSpend, onAdd, onViewAll }: {
   expenses: Expense[];
   members: Member[];
   settings: TeamSettings;
@@ -469,7 +466,7 @@ function HomeDashboard({ currentMember, expenses, members, settings, totalSpend,
       <div className="intro-row">
         <div>
           <p className="eyebrow">August overview</p>
-          <h1 className="page-heading">Good evening, {currentMember.name.split(" ")[0]}.</h1>
+          <h1 className="page-heading">Your spending overview.</h1>
           <p className="intro-copy">Your team has logged {expenses.length} expenses this month.</p>
         </div>
         <button className="primary-button desktop-add" onClick={onAdd}><span>＋</span> Add expense</button>
@@ -581,10 +578,9 @@ type ExpenseFormValue = {
   proof: File | null;
 };
 
-function ExpenseModal({ members, settings, currentMember, onClose, onSubmit }: {
+function ExpenseModal({ members, settings, onClose, onSubmit }: {
   members: Member[];
   settings: TeamSettings;
-  currentMember: Member;
   onClose: () => void;
   onSubmit: (value: ExpenseFormValue) => Promise<void>;
 }) {
@@ -594,7 +590,7 @@ function ExpenseModal({ members, settings, currentMember, onClose, onSubmit }: {
     category: "Meals",
     paymentMethod: "cash",
     spentAt: todayValue(),
-    spenderId: currentMember.id,
+    spenderId: "",
     notes: "",
     proof: null,
   });
@@ -613,6 +609,7 @@ function ExpenseModal({ members, settings, currentMember, onClose, onSubmit }: {
     setError(null);
     if (!value.amount || Number(value.amount) <= 0) return setError("Enter an amount greater than zero.");
     if (!value.merchant.trim()) return setError("Add the merchant or reason for spending.");
+    if (!value.spenderId) return setError("Choose who spent this amount.");
     if (settings.requireProof && !value.proof) return setError("Attach a receipt photo or screenshot as proof.");
     setSaving(true);
     try {
@@ -669,7 +666,7 @@ function AdminView({ configured, members, settings, currentMember, onMembersChan
     event.preventDefault();
     if (!name.trim() || !email.includes("@")) return onToast("Add a member name and valid email.");
     setAdding(true);
-    const draft: Member = { id: `member-${Date.now()}`, name: name.trim(), email: email.trim().toLowerCase(), role, status: "invited", avatarColor: ["#a9d9c7", "#f5a98c", "#c5b8e8", "#f3bf73"][members.length % 4] };
+    const draft: Member = { id: `member-${Date.now()}`, name: name.trim(), email: email.trim().toLowerCase(), role, status: "active", avatarColor: ["#a9d9c7", "#f5a98c", "#c5b8e8", "#f3bf73"][members.length % 4] };
     try {
       let created = draft;
       if (configured) {
@@ -680,7 +677,7 @@ function AdminView({ configured, members, settings, currentMember, onMembersChan
       }
       onMembersChange([...members, created]);
       setName(""); setEmail(""); setRole("member");
-      onToast(configured ? "Member added. They can join with this email." : "Member added to the demo team.");
+      onToast(configured ? "Member added and active. They can use the shared website password." : "Member added to the demo team.");
     } catch (caught) {
       onToast(caught instanceof Error ? caught.message : "Could not add member");
     } finally {
@@ -713,11 +710,12 @@ function AdminView({ configured, members, settings, currentMember, onMembersChan
       <div className="tab-header"><div><p className="eyebrow">Workspace control</p><h1>Admin</h1><p className="intro-copy">Manage who can spend and how your team records it.</p></div></div>
       <div className="admin-layout">
         <section className="admin-card">
-          <div className="section-head"><div><h2>Team members</h2><p>{members.filter((member) => member.status === "active").length} active · {members.filter((member) => member.status === "invited").length} invited</p></div></div>
+          <div className="section-head"><div><h2>Team members</h2><p>{members.filter((member) => member.status === "active").length} active profiles</p></div></div>
+          <div className="shared-access-note"><strong>One password for everyone</strong><span>Members use the website password. Profiles only identify who spent; no separate login setup is needed.</span></div>
           <div className="member-list">{members.map((member) => <div className="member-row" key={member.id}><span className="avatar large" style={avatarStyle(member.avatarColor)}>{initials(member.name)}</span><div className="member-copy"><strong>{member.name}</strong><span>{member.email} · {member.status}</span></div><span className={`role-badge ${member.role}`}>{member.role}</span></div>)}</div>
           <p className="divider-label">Add a member</p>
           <form className="settings-form" onSubmit={addMember}>
-            <div className="field-grid two"><div className="field"><label htmlFor="member-name">Full name</label><input id="member-name" value={name} onChange={(event) => setName(event.target.value)} placeholder="Team member" /></div><div className="field"><label htmlFor="member-email">Work email</label><input id="member-email" type="email" value={email} onChange={(event) => setEmail(event.target.value)} placeholder="name@company.com" /></div></div>
+            <div className="field-grid two"><div className="field"><label htmlFor="member-name">Full name</label><input id="member-name" value={name} onChange={(event) => setName(event.target.value)} placeholder="Team member" /></div><div className="field"><label htmlFor="member-email">Email (for records)</label><input id="member-email" type="email" value={email} onChange={(event) => setEmail(event.target.value)} placeholder="name@company.com" /></div></div>
             <div className="field"><label htmlFor="member-role">Role</label><Dropdown id="member-role" value={role} options={[{ value: "member", label: "Member — add and view spending" }, { value: "admin", label: "Admin — manage the workspace" }]} onChange={(nextRole) => setRole(nextRole as Role)} /></div>
             <button className="secondary-button full" disabled={adding}>{adding ? "Adding…" : "＋ Add team member"}</button>
           </form>

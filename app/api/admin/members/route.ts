@@ -17,7 +17,7 @@ export async function POST(request: Request) {
     const rows = await supabaseRequest<Array<Parameters<typeof mapMember>[0]>>("/rest/v1/team_members?select=*", {
       method: "POST",
       headers: { Prefer: "return=representation" },
-      body: JSON.stringify({ team_id: admin.team_id, full_name: name, email, role, status: "invited", avatar_color: COLORS[Math.floor(Math.random() * COLORS.length)] }),
+      body: JSON.stringify({ team_id: admin.team_id, full_name: name, email, role, status: "active", avatar_color: COLORS[Math.floor(Math.random() * COLORS.length)] }),
     });
     if (!rows[0]) throw new Error("Member was not returned after saving");
     return Response.json({ member: mapMember(rows[0]) }, { status: 201 });

@@ -1135,6 +1135,27 @@ textarea:focus-visible {
   gap: 10px;
 }
 
+.shared-access-note {
+  display: grid;
+  gap: 4px;
+  margin: -3px 0 14px;
+  border: 1px solid #cfe1d9;
+  border-radius: 14px;
+  padding: 12px 13px;
+  background: var(--mint-light);
+}
+
+.shared-access-note strong {
+  color: var(--teal-dark);
+  font-size: 12px;
+}
+
+.shared-access-note span {
+  color: var(--ink-soft);
+  font-size: 11px;
+  line-height: 1.5;
+}
+
 .member-row {
   display: grid;
   grid-template-columns: 45px minmax(0, 1fr) auto;
