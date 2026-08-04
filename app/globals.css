@@ -2821,6 +2821,12 @@ body {
   align-items: center;
   justify-content: flex-end;
   gap: 7px;
+  margin-top: 7px;
+}
+
+.expense-meta {
+  min-width: 64px;
+  text-align: right;
 }
 
 .expense-action,
@@ -2874,8 +2880,7 @@ body {
   }
 
   .expense-actions {
-    grid-column: 2 / -1;
-    justify-content: flex-start;
-    margin-top: -3px;
+    justify-content: flex-end;
+    margin-top: 6px;
   }
 }
