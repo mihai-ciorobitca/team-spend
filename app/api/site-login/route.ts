@@ -3,6 +3,27 @@ import { createSiteAccessToken, SITE_ACCESS_COOKIE, verifySitePassword } from "@
 import { findMemberByEmail, hasTeamMembers, isSupabaseConfigured } from "@/lib/supabase-admin";
 import { verifyMemberPassword } from "@/lib/member-password";
 
+const LAST_LOGIN_EMAIL_COOKIE = "peptiking_last_login_email";
+
+function failedLoginResponse(request: Request, returnTo: string, error: "credentials" | "service", email: string) {
+  const failureUrl = new URL("/login", request.url);
+  failureUrl.searchParams.set("error", error);
+  if (returnTo !== "/") failureUrl.searchParams.set("next", returnTo);
+  const response = NextResponse.redirect(failureUrl, 303);
+  if (/^\S+@\S+\.\S+$/.test(email)) {
+    response.cookies.set({
+      name: LAST_LOGIN_EMAIL_COOKIE,
+      value: email,
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+      path: "/login",
+      maxAge: 60 * 10,
+    });
+  }
+  return response;
+}
+
 function safeReturnPath(value: FormDataEntryValue | null) {
   if (typeof value !== "string" || !value.startsWith("/") || value.startsWith("//")) return "/";
   return value;
@@ -20,10 +41,7 @@ export async function POST(request: Request) {
   }
 
   if (!/^\S+@\S+\.\S+$/.test(email) || !suppliedPassword || suppliedPassword.length > 128) {
-    const failureUrl = new URL("/login", request.url);
-    failureUrl.searchParams.set("error", "credentials");
-    if (returnTo !== "/") failureUrl.searchParams.set("next", returnTo);
-    return NextResponse.redirect(failureUrl, 303);
+    return failedLoginResponse(request, returnTo, "credentials", email);
   }
 
   const adminEmail = (process.env.PEPTIKING_ADMIN_EMAIL || "admin@peptikingmedia.com").trim().toLowerCase();
@@ -42,17 +60,11 @@ export async function POST(request: Request) {
       hasAccess = email === adminEmail && await verifySitePassword(suppliedPassword, configuredPassword);
     }
   } catch {
-    const failureUrl = new URL("/login", request.url);
-    failureUrl.searchParams.set("error", "service");
-    if (returnTo !== "/") failureUrl.searchParams.set("next", returnTo);
-    return NextResponse.redirect(failureUrl, 303);
+    return failedLoginResponse(request, returnTo, "service", email);
   }
 
   if (!hasAccess) {
-    const failureUrl = new URL("/login", request.url);
-    failureUrl.searchParams.set("error", "credentials");
-    if (returnTo !== "/") failureUrl.searchParams.set("next", returnTo);
-    return NextResponse.redirect(failureUrl, 303);
+    return failedLoginResponse(request, returnTo, "credentials", email);
   }
 
   const response = NextResponse.redirect(new URL(returnTo, request.url), 303);
@@ -65,5 +77,6 @@ export async function POST(request: Request) {
     path: "/",
     maxAge: 60 * 60 * 24 * 7,
   });
+  response.cookies.set({ name: LAST_LOGIN_EMAIL_COOKIE, value: "", path: "/login", maxAge: 0 });
   return response;
 }

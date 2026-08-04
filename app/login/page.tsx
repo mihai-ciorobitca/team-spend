@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Image from "next/image";
+import { cookies } from "next/headers";
 import { LockKeyhole } from "lucide-react";
 import { PasswordField } from "./password-field";
 
@@ -18,6 +19,8 @@ export default async function LoginPage({ searchParams }: {
   searchParams: Promise<{ error?: string; setup?: string; next?: string | string[] }>;
 }) {
   const params = await searchParams;
+  const cookieStore = await cookies();
+  const lastEmail = cookieStore.get("peptiking_last_login_email")?.value ?? "";
   const isConfigured = Boolean(process.env.SITE_PASSWORD);
   const showSetup = params.setup === "1" || !isConfigured;
   const errorMessage = params.error === "service"
@@ -45,7 +48,7 @@ export default async function LoginPage({ searchParams }: {
           <form className="login-form" action="/api/site-login" method="post">
             <input type="hidden" name="next" value={safeNext(params.next)} />
             <label htmlFor="site-email">Email</label>
-            <input id="site-email" name="email" type="email" inputMode="email" autoComplete="email" autoCapitalize="none" spellCheck={false} required placeholder="name@peptikingmedia.com" />
+            <input id="site-email" name="email" type="email" inputMode="email" autoComplete="email" autoCapitalize="none" spellCheck={false} required placeholder="name@peptikingmedia.com" defaultValue={lastEmail} />
             <label htmlFor="site-password">Password</label>
             <PasswordField />
             {errorMessage && <p className="login-error" role="alert">{errorMessage}</p>}
