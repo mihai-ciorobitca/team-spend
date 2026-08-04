@@ -26,6 +26,7 @@ import {
   Plane,
   Plus,
   ReceiptText,
+  RefreshCw,
   Save,
   Search,
   Settings,
@@ -71,6 +72,7 @@ type TeamSettings = {
   currency: string;
   currencies: string[];
   requireProof: boolean;
+  requiredAppVersion: string;
 };
 
 type BootstrapPayload = {
@@ -107,7 +109,20 @@ const DEFAULT_SETTINGS: TeamSettings = {
   currency: "EUR",
   currencies: ["EUR"],
   requireProof: true,
+  requiredAppVersion: "1.0.0",
 };
+
+const APP_VERSION = process.env.NEXT_PUBLIC_APP_VERSION ?? "1.0.0";
+
+function isNewerVersion(requiredVersion: string, currentVersion: string) {
+  const required = requiredVersion.split(".").map(Number);
+  const current = currentVersion.split(".").map(Number);
+  for (let index = 0; index < Math.max(required.length, current.length); index += 1) {
+    const difference = (required[index] ?? 0) - (current[index] ?? 0);
+    if (difference !== 0) return difference > 0;
+  }
+  return false;
+}
 
 const CATEGORIES = ["Meals", "Transport", "Software", "Supplies", "Utilities", "Travel", "Other"];
 const CURRENCY_OPTIONS = [
@@ -329,12 +344,18 @@ export function SpendingTracker() {
     });
   }, [categoryFilter, expenses, members, search]);
   const isAdmin = currentMember.role === "admin";
+  const updateAvailable = configured && isNewerVersion(settings.requiredAppVersion, APP_VERSION);
 
   const showToast = (message: string) => setToast(message);
   const navigate = (nextTab: Tab) => {
     if (nextTab === "admin" && !isAdmin) return;
     setTab(nextTab);
     window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+  const getUpdate = () => {
+    const updateUrl = new URL(window.location.href);
+    updateUrl.searchParams.set("get-update", Date.now().toString());
+    window.location.assign(updateUrl.toString());
   };
 
   const addExpense = async (form: ExpenseFormValue) => {
@@ -472,6 +493,7 @@ export function SpendingTracker() {
             <button onClick={() => navigate("admin")}><Database size={14} aria-hidden="true" />Connect Supabase</button>
           </div>
         )}
+        {updateAvailable && <div className="update-banner" role="status"><div><RefreshCw size={17} strokeWidth={1.9} aria-hidden="true" /><span><strong>Update available</strong><small>Version {settings.requiredAppVersion} is ready.</small></span></div><button type="button" onClick={getUpdate}>Get update</button></div>}
 
         {tab === "home" && (
           <HomeDashboard
@@ -998,6 +1020,7 @@ function AdminView({ configured, members, settings, currentMember, onMembersChan
           {!configured && <div className="setup-box"><h3>Connect Supabase to go live</h3><p>The interface is running with demo data. Your private proof bucket and team tables are already prepared in the project.</p><ol className="setup-steps"><li><span className="step-number">1</span>Run the included schema in Supabase</li><li><span className="step-number">2</span>Add the project URL and service key</li><li><span className="step-number">3</span>Refresh — your first admin is created</li></ol></div>}
           <div className="settings-form" style={{ marginTop: 18 }}>
             <div className="field"><label htmlFor="team-name">Team name</label><input id="team-name" value={settings.teamName} onChange={(event) => onSettingsChange({ ...settings, teamName: event.target.value })} /></div>
+            <div className="field"><label htmlFor="required-app-version">Latest app version</label><input id="required-app-version" inputMode="decimal" value={settings.requiredAppVersion} onChange={(event) => onSettingsChange({ ...settings, requiredAppVersion: event.target.value })} placeholder="1.0.1" /><span className="field-hint">Set this to the Median release version. Older app builds will show a Get update button.</span></div>
             <div className="field"><span className="field-label">Available currencies</span><div className="currency-selector">{CURRENCY_OPTIONS.map((option) => { const enabled = settings.currencies.includes(option.value); return <button key={option.value} type="button" className={`currency-option ${enabled ? "active" : ""}`} onClick={() => { const currencies = enabled ? settings.currencies.filter((currency) => currency !== option.value) : [...settings.currencies, option.value]; if (currencies.length) onSettingsChange({ ...settings, currency: currencies[0], currencies }); }} aria-pressed={enabled}>{enabled && <Check size={15} aria-hidden="true" />}{option.label}</button>; })}</div><span className="field-hint">Choose every currency team members can use when recording spending.</span></div>
             <div className="toggle-row"><div className="toggle-copy"><strong>Require proof of spending</strong><span>Receipt photo or payment screenshot</span></div><div className="toggle-action"><span>{settings.requireProof ? "Required" : "Optional"}</span><button type="button" className={`toggle ${settings.requireProof ? "on" : ""}`} onClick={() => onSettingsChange({ ...settings, requireProof: !settings.requireProof })} aria-label="Toggle required proof" aria-pressed={settings.requireProof} /></div></div>
             <button className="primary-button dark full" onClick={saveSettings} disabled={saving}>{!saving && <Save size={16} aria-hidden="true" />}{saving ? "Saving…" : "Save settings"}</button>

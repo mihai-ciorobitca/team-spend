@@ -30,6 +30,10 @@ Existing databases must run [`supabase/migrations/20260804_member_passwords.sql`
 
 The default admin email is `admin@peptikingmedia.com`. `PEPTIKING_ADMIN_EMAIL` and `PEPTIKING_ADMIN_NAME` can override that identity when needed.
 
+## Median app updates
+
+Set `NEXT_PUBLIC_APP_VERSION` to the version embedded in each Median release, for example `1.0.1`, and redeploy the website. In Admin, set **Latest app version** to the same release number after publishing it in Median. Older app builds will then show a **Get update** button. Existing Supabase projects must run [`supabase/migrations/20260804_app_updates.sql`](supabase/migrations/20260804_app_updates.sql) once.
+
 The service-role key is used only in server route handlers and is never sent to the browser. Production access is designed for a private OpenAI Site, which supplies the signed-in user's verified email to the app server.
 
 ## Main routes

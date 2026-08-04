@@ -15,6 +15,7 @@ type SupabaseTeamRow = {
   currency: string;
   allowed_currencies?: string[] | null;
   require_proof: boolean;
+  required_app_version?: string | null;
 };
 
 const DEFAULT_ADMIN_EMAIL = "admin@peptikingmedia.com";
@@ -52,6 +53,7 @@ export type TeamSettings = {
   currency: string;
   currencies: string[];
   requireProof: boolean;
+  requiredAppVersion: string;
 };
 
 export type Expense = {
@@ -237,6 +239,7 @@ export function mapSettings(row: SupabaseTeamRow): TeamSettings {
     currency: currencies[0] ?? "EUR",
     currencies: currencies.length ? currencies : ["EUR"],
     requireProof: row.require_proof,
+    requiredAppVersion: /^\d+(\.\d+){0,2}$/.test(row.required_app_version ?? "") ? row.required_app_version! : "1.0.0",
   };
 }
 

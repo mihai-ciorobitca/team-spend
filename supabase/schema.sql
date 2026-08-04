@@ -9,6 +9,7 @@ create table if not exists public.teams (
   currency text not null default 'EUR' check (currency in ('EUR', 'VND')),
   allowed_currencies text[] not null default array['EUR']::text[] check (allowed_currencies <@ array['EUR', 'VND']::text[] and cardinality(allowed_currencies) > 0),
   require_proof boolean not null default true,
+  required_app_version text not null default '1.0.0' check (required_app_version ~ '^\d+(\.\d+){0,2}$'),
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
@@ -97,6 +98,7 @@ on conflict (id) do update set
 -- Keep existing projects aligned when this schema is run again.
 alter table public.team_members add column if not exists password_hash text;
 alter table public.teams add column if not exists allowed_currencies text[] not null default array['EUR']::text[];
+alter table public.teams add column if not exists required_app_version text not null default '1.0.0';
 alter table public.expenses add column if not exists currency text not null default 'EUR';
 update public.teams
 set currency = 'EUR'

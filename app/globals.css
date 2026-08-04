@@ -2840,6 +2840,53 @@ body {
   color: var(--teal);
 }
 
+.update-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  margin-bottom: 18px;
+  border: 1px solid #b9d9d4;
+  border-radius: 10px;
+  padding: 11px 12px;
+  background: #edf8f6;
+  color: var(--teal);
+}
+
+.update-banner > div {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+
+.update-banner span {
+  display: grid;
+  gap: 1px;
+}
+
+.update-banner strong,
+.update-banner small {
+  font-size: 12px;
+}
+
+.update-banner small {
+  color: var(--ink-soft);
+}
+
+.update-banner button {
+  flex: 0 0 auto;
+  min-height: 34px;
+  border: 0;
+  border-radius: 7px;
+  padding: 7px 11px;
+  background: var(--teal);
+  color: #fff;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
 .expense-actions {
   display: inline-flex;
   align-items: center;
@@ -2898,6 +2945,10 @@ body {
 }
 
 @media (max-width: 699px) {
+  .update-banner {
+    margin: 0 -2px 14px;
+  }
+
   .expense-list {
     gap: 10px;
   }
