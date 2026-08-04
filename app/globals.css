@@ -807,6 +807,26 @@ textarea:focus-visible {
   font-weight: 850;
 }
 
+.amount-currency-select {
+  flex: 0 0 auto;
+  min-height: 38px;
+  margin-right: 10px;
+  border: 1px solid #cbd8d5;
+  border-radius: 8px;
+  padding: 0 28px 0 10px;
+  background: #fff;
+  color: var(--teal);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 800;
+  outline: 0;
+}
+
+.amount-currency-select:focus-visible {
+  border-color: var(--teal);
+  box-shadow: 0 0 0 3px rgba(16, 111, 105, 0.14);
+}
+
 .amount-field input {
   min-width: 0;
   flex: 1;

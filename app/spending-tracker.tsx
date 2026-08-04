@@ -833,11 +833,13 @@ function ExpenseModal({ members, settings, onClose, onSubmit }: {
     <div className="modal-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) onClose(); }}>
       <form className="expense-modal" onSubmit={submit} aria-label="Add expense" role="dialog" aria-modal="true">
         <div className="modal-head"><div><p className="eyebrow">New spending</p><h2>Add an expense</h2></div><button type="button" className="close-button" onClick={onClose} aria-label="Close"><X size={19} strokeWidth={1.9} aria-hidden="true" /></button></div>
-        <label className="amount-field"><span>{value.currency}</span><input autoFocus inputMode="decimal" placeholder="0" aria-label="Amount" value={value.amount} onChange={(event) => setValue({ ...value, amount: event.target.value })} /></label>
+        <label className="amount-field">
+          {settings.currencies.length > 1 ? <select className="amount-currency-select" aria-label="Currency" value={value.currency} onChange={(event) => setValue({ ...value, currency: event.target.value })}>{CURRENCY_OPTIONS.filter((option) => settings.currencies.includes(option.value)).map((option) => <option key={option.value} value={option.value}>{option.value}</option>)}</select> : <span>{value.currency}</span>}
+          <input autoFocus inputMode="decimal" placeholder="0" aria-label="Amount" value={value.amount} onChange={(event) => setValue({ ...value, amount: event.target.value })} />
+        </label>
 
         <div className="field-grid">
           <div className="field"><span className="field-label">How was it paid?</span><div className="segmented">{(Object.keys(PAYMENT_LABELS) as PaymentMethod[]).map((method) => { const PaymentIcon = PAYMENT_ICONS[method]; return <button key={method} type="button" className={`segment-button ${value.paymentMethod === method ? "active" : ""}`} onClick={() => setValue({ ...value, paymentMethod: method })}><PaymentIcon size={16} strokeWidth={1.9} aria-hidden="true" />{PAYMENT_LABELS[method]}</button>; })}</div></div>
-          {settings.currencies.length > 1 && <div className="field"><label htmlFor="expense-currency">Currency</label><Dropdown id="expense-currency" value={value.currency} options={CURRENCY_OPTIONS.filter((option) => settings.currencies.includes(option.value))} onChange={(currency) => setValue({ ...value, currency })} /></div>}
           <div className="field"><span className="field-label">Who spent it?</span><div className="member-picker">{members.map((member) => <button key={member.id} type="button" className={`member-pill ${value.spenderId === member.id ? "active" : ""}`} onClick={() => setValue({ ...value, spenderId: member.id })}><span className="avatar small" style={avatarStyle(member.avatarColor)}>{initials(member.name)}</span><span>{member.name.split(" ")[0]}</span></button>)}</div></div>
           <div className="field-grid two">
             <div className="field"><label htmlFor="merchant">Merchant or reason</label><input id="merchant" value={value.merchant} onChange={(event) => setValue({ ...value, merchant: event.target.value })} placeholder="e.g. Taxi to client" /></div>
