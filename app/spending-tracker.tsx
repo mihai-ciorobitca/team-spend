@@ -379,7 +379,9 @@ export function SpendingTracker({ viewer }: { viewer: { name: string; email: str
 
       {addOpen && (
         <ExpenseModal
-          members={members.filter((member) => member.status === "active")}
+          members={members.filter(
+            (member) => member.status === "active" && member.role === "member",
+          )}
           settings={settings}
           onClose={() => setAddOpen(false)}
           onSubmit={addExpense}
