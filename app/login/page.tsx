@@ -27,8 +27,10 @@ export default async function LoginPage({ searchParams }: {
   return (
     <main className="login-shell">
       <section className="login-card">
-        <div className="login-brand"><Image className="brand-logo" src="/peptiking-logo.avif" alt="Peptiking" width={240} height={168} priority /></div>
-        <div className="login-lock" aria-hidden="true"><span /></div>
+        <div className="login-card-header">
+          <div className="login-brand"><Image className="brand-logo" src="/peptiking-logo.avif" alt="Peptiking" width={240} height={168} priority /></div>
+          <div className="login-lock" aria-hidden="true"><span /></div>
+        </div>
         <p className="eyebrow">Private workspace</p>
         <h1>Sign in to Peptiking.</h1>
         <p className="login-copy">Use your team email and the shared workspace password. Your member role determines what you can access.</p>

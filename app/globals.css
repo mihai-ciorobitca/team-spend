@@ -2594,3 +2594,33 @@ body {
     display: none;
   }
 }
+
+.login-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  margin-bottom: 28px;
+}
+
+.login-card-header .login-brand,
+.login-card-header .login-lock {
+  margin-bottom: 0;
+}
+
+.login-card-header .login-lock {
+  display: grid;
+  flex: 0 0 auto;
+}
+
+@media (max-width: 699px) {
+  .login-card-header {
+    margin-bottom: clamp(14px, 2.5dvh, 22px);
+  }
+}
+
+@media (max-height: 620px) {
+  .login-card-header {
+    margin-bottom: 10px;
+  }
+}
