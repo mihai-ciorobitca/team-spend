@@ -13,13 +13,13 @@ async function render(path = "/") {
   );
 }
 
-test("server-renders the TeamSpend application", async () => {
+test("server-renders the Peptiking application", async () => {
   const response = await render();
   assert.equal(response.status, 200);
   assert.match(response.headers.get("content-type") ?? "", /^text\/html\b/i);
 
   const html = await response.text();
-  assert.match(html, /<title>TeamSpend — Team spending, sorted<\/title>/i);
+  assert.match(html, /<title>Peptiking — Team spending, sorted<\/title>/i);
   assert.match(html, /Good evening/);
   assert.match(html, /Total team spend/);
   assert.match(html, /Add expense/);

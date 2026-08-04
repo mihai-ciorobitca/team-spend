@@ -115,8 +115,8 @@ function requestIdentity(request: Request) {
   if (process.env.SITE_PASSWORD) {
     return {
       userId: "shared-password-user",
-      email: (process.env.TEAMSPEND_ADMIN_EMAIL || "owner@local.demo").toLowerCase(),
-      fullName: process.env.TEAMSPEND_ADMIN_NAME || "Rog",
+      email: (process.env.PEPTIKING_ADMIN_EMAIL || process.env.TEAMSPEND_ADMIN_EMAIL || "owner@local.demo").toLowerCase(),
+      fullName: process.env.PEPTIKING_ADMIN_NAME || process.env.TEAMSPEND_ADMIN_NAME || "Rog",
     };
   }
   throw new ApiError("Sign in to access this team", 401);

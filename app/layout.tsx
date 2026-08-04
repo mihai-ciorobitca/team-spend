@@ -10,19 +10,19 @@ export async function generateMetadata(): Promise<Metadata> {
   return {
     metadataBase: new URL(`${protocol}://${host}`),
     title: {
-      default: "TeamSpend",
-      template: "%s · TeamSpend",
+      default: "Peptiking",
+      template: "%s · Peptiking",
     },
     description: "A fast, mobile-first spending tracker for your whole team.",
     openGraph: {
-      title: "TeamSpend",
+      title: "Peptiking",
       description: "Team spending, sorted.",
       type: "website",
-      images: [{ url: "/og.png", width: 1744, height: 912, alt: "TeamSpend — Team spending, sorted." }],
+      images: [{ url: "/og.png", width: 1731, height: 909, alt: "Peptiking — Team spending, sorted." }],
     },
     twitter: {
       card: "summary_large_image",
-      title: "TeamSpend",
+      title: "Peptiking",
       description: "Team spending, sorted.",
       images: ["/og.png"],
     },

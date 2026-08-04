@@ -5,7 +5,7 @@ import { SpendingTracker } from "./spending-tracker";
 export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
-  title: { absolute: "TeamSpend — Team spending, sorted" },
+  title: { absolute: "Peptiking — Team spending, sorted" },
   description: "Capture team expenses and receipt proof in seconds.",
 };
 

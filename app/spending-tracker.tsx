@@ -405,7 +405,7 @@ function Sidebar({ tab, teamName, member, viewer, onNavigate }: {
 }) {
   return (
     <aside className="sidebar">
-      <div className="brand"><span className="brand-mark">T</span><span>TeamSpend</span></div>
+      <div className="brand"><span className="brand-mark">P</span><span>Peptiking</span></div>
       <nav className="sidebar-nav" aria-label="Main navigation">
         <NavButton desktop label="Overview" symbol="⌂" active={tab === "home"} onClick={() => onNavigate("home")} />
         <NavButton desktop label="Expenses" symbol="≋" active={tab === "activity"} onClick={() => onNavigate("activity")} />
@@ -422,7 +422,7 @@ function Sidebar({ tab, teamName, member, viewer, onNavigate }: {
 function MobileTopbar({ member }: { member: Member }) {
   return (
     <header className="mobile-topbar">
-      <div className="brand"><span className="brand-mark">T</span><span>TeamSpend</span></div>
+      <div className="brand"><span className="brand-mark">P</span><span>Peptiking</span></div>
       <span className="avatar" style={avatarStyle(member.avatarColor)}>{initials(member.name)}</span>
     </header>
   );

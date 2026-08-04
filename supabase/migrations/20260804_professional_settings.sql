@@ -1,4 +1,4 @@
--- Adds Vietnamese đồng to existing TeamSpend projects.
+-- Adds Vietnamese đồng to existing Peptiking projects.
 -- Budget and approval fields are no longer used by the application; they are
 -- intentionally left in place to keep this migration non-destructive.
 

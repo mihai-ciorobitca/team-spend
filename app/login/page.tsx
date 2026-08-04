@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: { absolute: "Unlock TeamSpend" },
+  title: { absolute: "Unlock Peptiking" },
   description: "Enter the team password to continue.",
 };
 
@@ -21,7 +21,7 @@ export default async function LoginPage({ searchParams }: {
   return (
     <main className="login-shell">
       <section className="login-card">
-        <div className="login-brand"><span className="brand-mark">T</span><span>TeamSpend</span></div>
+        <div className="login-brand"><span className="brand-mark">P</span><span>Peptiking</span></div>
         <div className="login-lock" aria-hidden="true"><span /></div>
         <p className="eyebrow">Private workspace</p>
         <h1>Team access only.</h1>
@@ -37,7 +37,7 @@ export default async function LoginPage({ searchParams }: {
             <label htmlFor="site-password">Password</label>
             <input id="site-password" name="password" type="password" autoComplete="current-password" autoFocus required placeholder="Enter team password" />
             {params.error === "1" && <p className="login-error" role="alert">That password is not correct. Try again.</p>}
-            <button className="primary-button dark full" type="submit">Unlock TeamSpend</button>
+            <button className="primary-button dark full" type="submit">Unlock Peptiking</button>
           </form>
         )}
         <p className="login-footnote">Protected access · Receipt proof stays private</p>

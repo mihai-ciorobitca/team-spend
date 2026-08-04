@@ -1,4 +1,4 @@
--- TeamSpend database and private proof storage.
+-- Peptiking database and private proof storage.
 -- Run this once in the Supabase SQL editor before adding the environment values.
 
 create extension if not exists pgcrypto;
@@ -73,7 +73,7 @@ alter table public.team_members enable row level security;
 alter table public.expenses enable row level security;
 
 -- Browser clients receive no direct table policies. All requests go through the
--- TeamSpend server, which verifies the signed-in Sites user and uses the service role.
+-- Peptiking server, which verifies the signed-in Sites user and uses the service role.
 revoke all on public.teams from anon, authenticated;
 revoke all on public.team_members from anon, authenticated;
 revoke all on public.expenses from anon, authenticated;
