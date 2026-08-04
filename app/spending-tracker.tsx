@@ -389,7 +389,6 @@ export function SpendingTracker() {
     body.set("spentAt", form.spentAt);
     body.set("spenderId", form.spenderId);
     body.set("notes", form.notes);
-    if (form.proof) body.set("proof", form.proof);
 
     const optimisticId = `pending-${Date.now()}`;
     const preview = form.proof ? URL.createObjectURL(form.proof) : null;
@@ -397,11 +396,37 @@ export function SpendingTracker() {
     setExpenses((current) => [optimisticExpense, ...current]);
     setAddOpen(false);
     showToast("Expense saved.");
-    void fetch("/api/expenses", { method: "POST", body })
-      .then(async (response) => {
-        const payload = (await response.json()) as { expense?: Expense; message?: string };
-        if (!response.ok || !payload.expense) throw new Error(payload.message ?? "Could not save expense");
-        setExpenses((current) => current.map((expense) => expense.id === optimisticId ? payload.expense! : expense));
+    const readPayload = async <T,>(response: Response) => {
+      const raw = await response.text();
+      try {
+        return JSON.parse(raw) as T;
+      } catch {
+        throw new Error(response.status === 413 ? "Proof file is too large for this connection" : "The server could not complete the request");
+      }
+    };
+    const saveInBackground = async () => {
+      if (form.proof) {
+        const uploadUrlResponse = await fetch("/api/proofs/upload-url", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ name: form.proof.name, type: form.proof.type, size: form.proof.size, spentAt: form.spentAt }),
+        });
+        const uploadDetails = await readPayload<{ uploadUrl?: string; token?: string; path?: string; message?: string }>(uploadUrlResponse);
+        if (!uploadUrlResponse.ok || !uploadDetails.uploadUrl || !uploadDetails.token || !uploadDetails.path) throw new Error(uploadDetails.message ?? "Could not prepare proof upload");
+        const uploaded = await fetch(uploadDetails.uploadUrl, { method: "PUT", headers: { authorization: `Bearer ${uploadDetails.token}`, "content-type": form.proof.type || "application/octet-stream", "x-upsert": "false" }, body: form.proof });
+        if (!uploaded.ok) throw new Error("Proof upload failed. Please try again.");
+        body.set("proofPath", uploadDetails.path);
+        body.set("proofName", form.proof.name);
+        body.set("proofType", form.proof.type);
+      }
+      const response = await fetch("/api/expenses", { method: "POST", body });
+      const payload = await readPayload<{ expense?: Expense; message?: string }>(response);
+      if (!response.ok || !payload.expense) throw new Error(payload.message ?? "Could not save expense");
+      return payload.expense;
+    };
+    void saveInBackground()
+      .then((savedExpense) => {
+        setExpenses((current) => current.map((expense) => expense.id === optimisticId ? savedExpense : expense));
       })
       .catch((error: unknown) => {
         setExpenses((current) => current.filter((expense) => expense.id !== optimisticId));

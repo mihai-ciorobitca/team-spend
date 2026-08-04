@@ -320,6 +320,19 @@ export async function uploadProof(path: string, file: File) {
   }
 }
 
+export async function createProofUploadUrl(path: string) {
+  const { url, key, bucket } = config();
+  const response = await fetch(`${url}/storage/v1/object/upload/sign/${bucket}/${path}`, {
+    method: "POST",
+    headers: { apikey: key, authorization: `Bearer ${key}`, "content-type": "application/json" },
+    body: JSON.stringify({}),
+  });
+  if (!response.ok) throw new ApiError("The receipt proof could not be prepared", 502);
+  const payload = (await response.json()) as { token?: string };
+  if (!payload.token) throw new ApiError("The receipt proof could not be prepared", 502);
+  return { uploadUrl: `${url}/storage/v1/object/upload/sign/${bucket}/${path}`, token: payload.token };
+}
+
 export async function deleteProof(path: string) {
   const { url, key, bucket } = config();
   await fetch(`${url}/storage/v1/object/${bucket}/${path}`, { method: "DELETE", headers: { apikey: key, authorization: `Bearer ${key}` } });

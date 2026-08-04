@@ -25,6 +25,9 @@ export async function POST(request: Request) {
     const spenderId = String(form.get("spenderId") ?? "");
     const notes = String(form.get("notes") ?? "").trim().slice(0, 1000);
     const proof = form.get("proof");
+    const proofPath = String(form.get("proofPath") ?? "").trim();
+    const proofName = String(form.get("proofName") ?? "").trim().slice(0, 180);
+    const proofType = String(form.get("proofType") ?? "").trim();
 
     if (!merchant || merchant.length > 160) return Response.json({ message: "Add a shorter merchant or reason" }, { status: 400 });
     if (!Number.isFinite(amount) || amount <= 0 || amount > 999_999_999_999) return Response.json({ message: "Enter a valid amount" }, { status: 400 });
@@ -38,11 +41,15 @@ export async function POST(request: Request) {
     if (spenderId !== current.id) return Response.json({ message: "Members can only submit their own spending" }, { status: 403 });
 
     const file = proof instanceof File && proof.size > 0 ? proof : null;
-    if (team.require_proof && !file) return Response.json({ message: "Proof of spending is required" }, { status: 400 });
+    const directProof = Boolean(proofPath);
+    if (directProof && !proofPath.startsWith(`${current.team_id}/`)) return Response.json({ message: "Invalid proof upload" }, { status: 400 });
+    if (directProof && (!proofName || !(proofType.startsWith("image/") || proofType === "application/pdf"))) return Response.json({ message: "Invalid proof upload" }, { status: 400 });
+    if (team.require_proof && !file && !directProof) return Response.json({ message: "Proof of spending is required" }, { status: 400 });
     if (file && file.size > 10 * 1024 * 1024) return Response.json({ message: "Proof must be smaller than 10 MB" }, { status: 400 });
     if (file && !(file.type.startsWith("image/") || file.type === "application/pdf")) return Response.json({ message: "Proof must be an image or PDF" }, { status: 400 });
 
-    if (file) uploadedPath = `${current.team_id}/${spentAt.slice(0, 7)}/${crypto.randomUUID()}-${safeFileName(file.name)}`;
+    if (directProof) uploadedPath = proofPath;
+    else if (file) uploadedPath = `${current.team_id}/${spentAt.slice(0, 7)}/${crypto.randomUUID()}-${safeFileName(file.name)}`;
 
     const createExpense = supabaseRequest<Array<Parameters<typeof mapExpense>[0]>>("/rest/v1/expenses?select=*", {
       method: "POST",
@@ -59,14 +66,14 @@ export async function POST(request: Request) {
         spent_at: spentAt,
         notes: notes || null,
         proof_path: uploadedPath,
-        proof_name: file?.name ?? null,
-        proof_type: file?.type ?? null,
+        proof_name: directProof ? proofName : file?.name ?? null,
+        proof_type: directProof ? proofType : file?.type ?? null,
         status: "logged",
       }),
     });
     const [expenseResult, uploadResult] = await Promise.allSettled([
       createExpense,
-      file && uploadedPath ? uploadProof(uploadedPath, file) : Promise.resolve(),
+      file && uploadedPath && !directProof ? uploadProof(uploadedPath, file) : Promise.resolve(),
     ]);
     if (expenseResult.status === "rejected" || uploadResult.status === "rejected") {
       if (expenseResult.status === "fulfilled" && expenseResult.value[0]) {
