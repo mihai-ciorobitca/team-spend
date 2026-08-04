@@ -188,20 +188,31 @@ function Dropdown({ id, value, options, onChange }: {
   onChange: (value: string) => void;
 }) {
   const rootRef = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const selectedOptionRef = useRef<HTMLButtonElement>(null);
   const selectedIndex = Math.max(0, options.findIndex((option) => option.value === value));
   const [open, setOpen] = useState(false);
   const [activeIndex, setActiveIndex] = useState(selectedIndex);
+  const modalTitle = id === "category" ? "Choose category" : id === "currency" ? "Choose currency" : "Choose an option";
 
   useEffect(() => {
-    const closeOnOutsidePress = (event: PointerEvent) => {
-      if (!rootRef.current?.contains(event.target as Node)) setOpen(false);
+    if (!open) return;
+    setActiveIndex(selectedIndex);
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    const focusTimer = window.setTimeout(() => selectedOptionRef.current?.focus(), 0);
+    const closeOnEscape = (event: globalThis.KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setOpen(false);
+        triggerRef.current?.focus();
+      }
     };
-    document.addEventListener("pointerdown", closeOnOutsidePress);
-    return () => document.removeEventListener("pointerdown", closeOnOutsidePress);
-  }, []);
-
-  useEffect(() => {
-    if (open) setActiveIndex(selectedIndex);
+    document.addEventListener("keydown", closeOnEscape);
+    return () => {
+      window.clearTimeout(focusTimer);
+      document.body.style.overflow = previousOverflow;
+      document.removeEventListener("keydown", closeOnEscape);
+    };
   }, [open, selectedIndex]);
 
   const choose = (index: number) => {
@@ -232,6 +243,7 @@ function Dropdown({ id, value, options, onChange }: {
   return (
     <div className={`select-control ${open ? "open" : ""}`} ref={rootRef}>
       <button
+        ref={triggerRef}
         id={id}
         type="button"
         className="select-trigger"
@@ -246,24 +258,45 @@ function Dropdown({ id, value, options, onChange }: {
         <span className="select-value">{options[selectedIndex]?.label}</span>
         <ChevronDown className="select-chevron" size={18} strokeWidth={1.8} aria-hidden="true" />
       </button>
-      {open && (
-        <div className="select-menu" id={`${id}-listbox`} role="listbox" aria-label="Choose an option">
-          {options.map((option, index) => (
-            <button
-              key={option.value}
-              id={`${id}-option-${option.value}`}
-              type="button"
-              role="option"
-              aria-selected={option.value === value}
-              className={`select-option ${index === activeIndex ? "active" : ""}`}
-              onPointerMove={() => setActiveIndex(index)}
-              onClick={() => choose(index)}
-            >
-              <span>{option.label}</span>
-              {option.value === value && <span className="select-check" aria-hidden="true"><Check size={14} strokeWidth={2.4} /></span>}
-            </button>
-          ))}
-        </div>
+      {open && createPortal(
+        <div className="select-modal-backdrop" onPointerDown={(event) => {
+          if (event.target === event.currentTarget) {
+            setOpen(false);
+            triggerRef.current?.focus();
+          }
+        }}>
+          <section className="select-modal" role="dialog" aria-modal="true" aria-labelledby={`${id}-modal-title`}>
+            <div className="select-modal-header">
+              <div>
+                <span className="select-modal-eyebrow">Select an option</span>
+                <h2 id={`${id}-modal-title`}>{modalTitle}</h2>
+              </div>
+              <button type="button" className="select-modal-close" aria-label="Close options" onClick={() => {
+                setOpen(false);
+                triggerRef.current?.focus();
+              }}><X size={20} strokeWidth={1.9} /></button>
+            </div>
+            <div className="select-modal-list" id={`${id}-listbox`} role="listbox" aria-label={modalTitle}>
+              {options.map((option, index) => (
+                <button
+                  ref={option.value === value ? selectedOptionRef : undefined}
+                  key={option.value}
+                  id={`${id}-option-${option.value}`}
+                  type="button"
+                  role="option"
+                  aria-selected={option.value === value}
+                  className={`select-modal-option ${index === activeIndex ? "active" : ""}`}
+                  onMouseEnter={() => setActiveIndex(index)}
+                  onClick={() => choose(index)}
+                >
+                  <span>{option.label}</span>
+                  {option.value === value && <span className="select-check" aria-hidden="true"><Check size={15} strokeWidth={2.4} /></span>}
+                </button>
+              ))}
+            </div>
+          </section>
+        </div>,
+        document.body,
       )}
     </div>
   );
@@ -413,7 +446,12 @@ export function SpendingTracker() {
         });
         const uploadDetails = await readPayload<{ uploadUrl?: string; token?: string; path?: string; message?: string }>(uploadUrlResponse);
         if (!uploadUrlResponse.ok || !uploadDetails.uploadUrl || !uploadDetails.token || !uploadDetails.path) throw new Error(uploadDetails.message ?? "Could not prepare proof upload");
-        const uploaded = await fetch(uploadDetails.uploadUrl, { method: "PUT", headers: { authorization: `Bearer ${uploadDetails.token}`, "content-type": form.proof.type || "application/octet-stream", "x-upsert": "false" }, body: form.proof });
+        const signedUploadUrl = new URL(uploadDetails.uploadUrl);
+        signedUploadUrl.searchParams.set("token", uploadDetails.token);
+        const proofBody = new FormData();
+        proofBody.set("file", form.proof, form.proof.name);
+        proofBody.set("cacheControl", "3600");
+        const uploaded = await fetch(signedUploadUrl, { method: "PUT", headers: { "x-upsert": "false" }, body: proofBody });
         if (!uploaded.ok) throw new Error("Proof upload failed. Please try again.");
         body.set("proofPath", uploadDetails.path);
         body.set("proofName", form.proof.name);

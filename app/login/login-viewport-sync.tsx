@@ -26,6 +26,8 @@ export function LoginViewportSync() {
       root.style.setProperty("--login-viewport-top", `${offsetTop}px`);
       root.style.setProperty("--login-viewport-left", `${offsetLeft}px`);
       root.classList.toggle("login-keyboard-open", keyboardOpen);
+      root.classList.toggle("login-keyboard-tight", keyboardOpen && visibleHeight < 460);
+      root.classList.toggle("login-keyboard-short", keyboardOpen && visibleHeight < 360);
 
       if (!keyboardOpen) {
         const card = document.querySelector<HTMLElement>(".login-card");
@@ -67,6 +69,8 @@ export function LoginViewportSync() {
       document.removeEventListener("focusin", onFocusIn);
       document.removeEventListener("focusout", onFocusOut);
       root.classList.remove("login-keyboard-open");
+      root.classList.remove("login-keyboard-tight");
+      root.classList.remove("login-keyboard-short");
       root.classList.remove("login-measuring-card");
       root.style.removeProperty("--login-viewport-height");
       root.style.removeProperty("--login-viewport-width");
