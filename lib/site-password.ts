@@ -2,7 +2,7 @@ import { ApiError } from "./supabase-admin";
 
 export const SITE_ACCESS_COOKIE = "teamspend_access";
 export const SITE_IDENTITY_HEADER = "x-peptiking-user-email";
-const TOKEN_CONTEXT = "teamspend-site-access-v1:";
+const TOKEN_CONTEXT = "peptiking-site-access-v2:";
 
 async function sha256(value: string) {
   const bytes = new TextEncoder().encode(value);

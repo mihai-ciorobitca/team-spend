@@ -1,5 +1,5 @@
--- Peptiking uses one shared website password, so member profiles are active
--- immediately and are used to identify who spent rather than to send invites.
+-- Legacy migration: member profiles became active immediately instead of using
+-- invitations. Individual passwords are added by 20260804_member_passwords.sql.
 
 update public.team_members
 set status = 'active'

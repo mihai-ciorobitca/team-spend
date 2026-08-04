@@ -14,9 +14,12 @@ import {
   Code2,
   CreditCard,
   Database,
+  Eye,
+  EyeOff,
   FileUp,
   Globe2,
   LayoutDashboard,
+  KeyRound,
   LogOut,
   Package,
   Plane,
@@ -43,6 +46,7 @@ type Member = {
   role: Role;
   status: "active" | "inactive";
   avatarColor: string;
+  hasPassword: boolean;
 };
 
 type Expense = {
@@ -73,10 +77,10 @@ type BootstrapPayload = {
 };
 
 const DEMO_MEMBERS: Member[] = [
-  { id: "m-rog", name: "Admin", email: "admin@peptikingmedia.com", role: "admin", status: "active", avatarColor: "#f3bf73" },
-  { id: "m-maya", name: "Maya Chen", email: "maya@northstar.team", role: "member", status: "active", avatarColor: "#a9d9c7" },
-  { id: "m-niko", name: "Niko Rahman", email: "niko@northstar.team", role: "member", status: "active", avatarColor: "#f5a98c" },
-  { id: "m-lena", name: "Lena Park", email: "lena@northstar.team", role: "member", status: "active", avatarColor: "#c5b8e8" },
+  { id: "m-rog", name: "Admin", email: "admin@peptikingmedia.com", role: "admin", status: "active", avatarColor: "#f3bf73", hasPassword: true },
+  { id: "m-maya", name: "Maya Chen", email: "maya@northstar.team", role: "member", status: "active", avatarColor: "#a9d9c7", hasPassword: true },
+  { id: "m-niko", name: "Niko Rahman", email: "niko@northstar.team", role: "member", status: "active", avatarColor: "#f5a98c", hasPassword: true },
+  { id: "m-lena", name: "Lena Park", email: "lena@northstar.team", role: "member", status: "active", avatarColor: "#c5b8e8", hasPassword: true },
 ];
 
 const DEMO_EXPENSES: Expense[] = [
@@ -724,6 +728,24 @@ function ExpenseModal({ members, settings, onClose, onSubmit }: {
   );
 }
 
+function AdminPasswordInput({ id, value, visible, onChange, onToggle, placeholder }: {
+  id: string;
+  value: string;
+  visible: boolean;
+  onChange: (value: string) => void;
+  onToggle: () => void;
+  placeholder: string;
+}) {
+  return (
+    <div className="password-control">
+      <input id={id} type={visible ? "text" : "password"} value={value} onChange={(event) => onChange(event.target.value)} autoComplete="new-password" maxLength={128} placeholder={placeholder} />
+      <button type="button" className="password-toggle" onClick={onToggle} aria-label={visible ? "Hide password" : "Show password"} aria-pressed={visible}>
+        {visible ? <EyeOff size={19} strokeWidth={1.8} aria-hidden="true" /> : <Eye size={19} strokeWidth={1.8} aria-hidden="true" />}
+      </button>
+    </div>
+  );
+}
+
 function AdminView({ configured, members, settings, currentMember, onMembersChange, onSettingsChange, onToast }: {
   configured: boolean;
   members: Member[];
@@ -736,29 +758,63 @@ function AdminView({ configured, members, settings, currentMember, onMembersChan
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [role, setRole] = useState<Role>("member");
+  const [memberPassword, setMemberPassword] = useState("");
+  const [showMemberPassword, setShowMemberPassword] = useState(false);
+  const [passwordMemberId, setPasswordMemberId] = useState("");
+  const [resetPassword, setResetPassword] = useState("");
+  const [showResetPassword, setShowResetPassword] = useState(false);
   const [adding, setAdding] = useState(false);
+  const [resettingPassword, setResettingPassword] = useState(false);
   const [saving, setSaving] = useState(false);
+  const passwordMembers = members.filter((member) => member.role === "member" && member.status === "active");
+  const selectedPasswordMemberId = passwordMemberId || passwordMembers[0]?.id || "";
 
   const addMember = async (event: FormEvent) => {
     event.preventDefault();
     if (!name.trim() || !email.includes("@")) return onToast("Add a member name and valid email.");
+    if (role === "member" && (memberPassword.length < 8 || memberPassword.length > 128)) return onToast("Set a member password with 8 to 128 characters.");
     setAdding(true);
-    const draft: Member = { id: `member-${Date.now()}`, name: name.trim(), email: email.trim().toLowerCase(), role, status: "active", avatarColor: ["#a9d9c7", "#f5a98c", "#c5b8e8", "#f3bf73"][members.length % 4] };
+    const draft: Member = { id: `member-${Date.now()}`, name: name.trim(), email: email.trim().toLowerCase(), role, status: "active", avatarColor: ["#a9d9c7", "#f5a98c", "#c5b8e8", "#f3bf73"][members.length % 4], hasPassword: role === "member" };
     try {
       let created = draft;
       if (configured) {
-        const response = await fetch("/api/admin/members", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ name: draft.name, email: draft.email, role: draft.role }) });
+        const response = await fetch("/api/admin/members", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ name: draft.name, email: draft.email, role: draft.role, password: memberPassword }) });
         const payload = (await response.json()) as { member?: Member; message?: string };
         if (!response.ok || !payload.member) throw new Error(payload.message ?? "Could not add member");
         created = payload.member;
       }
       onMembersChange([...members, created]);
-      setName(""); setEmail(""); setRole("member");
-      onToast(configured ? "Member added and active. They can use the shared website password." : "Member added to the demo team.");
+      setName(""); setEmail(""); setRole("member"); setMemberPassword(""); setShowMemberPassword(false);
+      onToast(configured ? "Member added with an individual password." : "Member added to the demo team.");
     } catch (caught) {
       onToast(caught instanceof Error ? caught.message : "Could not add member");
     } finally {
       setAdding(false);
+    }
+  };
+
+  const setAccessPassword = async () => {
+    if (!selectedPasswordMemberId) return onToast("Choose a member.");
+    if (resetPassword.length < 8 || resetPassword.length > 128) return onToast("Set a member password with 8 to 128 characters.");
+    setResettingPassword(true);
+    try {
+      let updated = members.find((member) => member.id === selectedPasswordMemberId);
+      if (configured) {
+        const response = await fetch("/api/admin/members", { method: "PATCH", headers: { "content-type": "application/json" }, body: JSON.stringify({ memberId: selectedPasswordMemberId, password: resetPassword }) });
+        const payload = (await response.json()) as { member?: Member; message?: string };
+        if (!response.ok || !payload.member) throw new Error(payload.message ?? "Could not set member password");
+        updated = payload.member;
+      } else if (updated) {
+        updated = { ...updated, hasPassword: true };
+      }
+      if (updated) onMembersChange(members.map((member) => member.id === updated!.id ? updated! : member));
+      setResetPassword("");
+      setShowResetPassword(false);
+      onToast(configured ? "Member password updated." : "Demo member password updated.");
+    } catch (caught) {
+      onToast(caught instanceof Error ? caught.message : "Could not set member password");
+    } finally {
+      setResettingPassword(false);
     }
   };
 
@@ -788,12 +844,21 @@ function AdminView({ configured, members, settings, currentMember, onMembersChan
       <div className="admin-layout">
         <section className="admin-card">
           <div className="section-head"><div><h2>Team members</h2><p>{members.filter((member) => member.status === "active").length} active profiles</p></div></div>
-          <div className="shared-access-note"><strong>One password for everyone</strong><span>Members use the website password. Profiles only identify who spent; no separate login setup is needed.</span></div>
-          <div className="member-list">{members.map((member) => <div className="member-row" key={member.id}><span className="avatar large" style={avatarStyle(member.avatarColor)}>{initials(member.name)}</span><div className="member-copy"><strong>{member.name}</strong><span>{member.email} · {member.status}</span></div><span className={`role-badge ${member.role}`}>{member.role}</span></div>)}</div>
+          <div className="shared-access-note"><KeyRound size={18} strokeWidth={1.8} aria-hidden="true" /><div><strong>Separate member passwords</strong><span>Admins use the private environment password. Every member signs in with the password you assign here.</span></div></div>
+          <div className="member-list">{members.map((member) => <div className="member-row" key={member.id}><span className="avatar large" style={avatarStyle(member.avatarColor)}>{initials(member.name)}</span><div className="member-copy"><strong>{member.name}</strong><span>{member.email} · {member.status} · {member.role === "admin" ? "admin password" : member.hasPassword ? "password set" : "password required"}</span></div><span className={`role-badge ${member.role}`}>{member.role}</span></div>)}</div>
+          <p className="divider-label">Member passwords</p>
+          {passwordMembers.length ? (
+            <div className="credential-panel">
+              <div className="field"><label htmlFor="password-member">Team member</label><Dropdown id="password-member" value={selectedPasswordMemberId} options={passwordMembers.map((member) => ({ value: member.id, label: `${member.name} — ${member.hasPassword ? "password set" : "password required"}` }))} onChange={setPasswordMemberId} /></div>
+              <div className="field"><label htmlFor="reset-member-password">New password</label><AdminPasswordInput id="reset-member-password" value={resetPassword} visible={showResetPassword} onChange={setResetPassword} onToggle={() => setShowResetPassword((current) => !current)} placeholder="8 or more characters" /><span className="field-hint">This replaces the member&apos;s previous password.</span></div>
+              <button type="button" className="secondary-button full" onClick={setAccessPassword} disabled={resettingPassword}>{!resettingPassword && <KeyRound size={16} aria-hidden="true" />}{resettingPassword ? "Updating…" : "Set member password"}</button>
+            </div>
+          ) : <p className="muted credential-empty">Add a member before setting a password.</p>}
           <p className="divider-label">Add a member</p>
           <form className="settings-form" onSubmit={addMember}>
-            <div className="field-grid two"><div className="field"><label htmlFor="member-name">Full name</label><input id="member-name" value={name} onChange={(event) => setName(event.target.value)} placeholder="Team member" /></div><div className="field"><label htmlFor="member-email">Email (for records)</label><input id="member-email" type="email" value={email} onChange={(event) => setEmail(event.target.value)} placeholder="name@company.com" /></div></div>
+            <div className="field-grid two"><div className="field"><label htmlFor="member-name">Full name</label><input id="member-name" value={name} onChange={(event) => setName(event.target.value)} placeholder="Team member" /></div><div className="field"><label htmlFor="member-email">Login email</label><input id="member-email" type="email" value={email} onChange={(event) => setEmail(event.target.value)} placeholder="name@company.com" /></div></div>
             <div className="field"><label htmlFor="member-role">Role</label><Dropdown id="member-role" value={role} options={[{ value: "member", label: "Member — add and view spending" }, { value: "admin", label: "Admin — manage the workspace" }]} onChange={(nextRole) => setRole(nextRole as Role)} /></div>
+            {role === "member" ? <div className="field"><label htmlFor="new-member-password">Member password</label><AdminPasswordInput id="new-member-password" value={memberPassword} visible={showMemberPassword} onChange={setMemberPassword} onToggle={() => setShowMemberPassword((current) => !current)} placeholder="8 or more characters" /><span className="field-hint">Share this password privately with the member.</span></div> : <p className="field-hint">Additional admins use the private environment password.</p>}
             <button className="secondary-button full" disabled={adding}>{!adding && <Plus size={16} aria-hidden="true" />}{adding ? "Adding…" : "Add team member"}</button>
           </form>
         </section>

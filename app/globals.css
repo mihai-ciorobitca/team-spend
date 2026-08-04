@@ -2736,3 +2736,47 @@ body {
 .login-lock svg {
   color: var(--orange);
 }
+
+.shared-access-note {
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: start;
+  gap: 10px;
+}
+
+.shared-access-note > svg {
+  margin-top: 1px;
+  color: var(--teal);
+}
+
+.shared-access-note > div {
+  display: grid;
+  gap: 3px;
+}
+
+.password-control > input {
+  width: 100%;
+  padding-right: 52px;
+}
+
+.field-hint {
+  color: var(--ink-soft);
+  font-size: 11px;
+  line-height: 1.45;
+}
+
+.credential-panel {
+  display: grid;
+  gap: 14px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 15px;
+  background: #f8fafc;
+}
+
+.credential-empty {
+  margin: 0;
+  border: 1px dashed var(--line);
+  border-radius: 9px;
+  padding: 14px;
+  font-size: 12px;
+}

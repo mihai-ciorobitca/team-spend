@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createSiteAccessToken, SITE_ACCESS_COOKIE, verifySitePassword } from "@/lib/site-password";
 import { findMemberByEmail, hasTeamMembers, isSupabaseConfigured } from "@/lib/supabase-admin";
+import { verifyMemberPassword } from "@/lib/member-password";
 
 function safeReturnPath(value: FormDataEntryValue | null) {
   if (typeof value !== "string" || !value.startsWith("/") || value.startsWith("//")) return "/";
@@ -18,7 +19,7 @@ export async function POST(request: Request) {
     return NextResponse.redirect(new URL("/login?setup=1", request.url), 303);
   }
 
-  if (!/^\S+@\S+\.\S+$/.test(email) || !(await verifySitePassword(suppliedPassword, configuredPassword))) {
+  if (!/^\S+@\S+\.\S+$/.test(email) || !suppliedPassword || suppliedPassword.length > 128) {
     const failureUrl = new URL("/login", request.url);
     failureUrl.searchParams.set("error", "credentials");
     if (returnTo !== "/") failureUrl.searchParams.set("next", returnTo);
@@ -30,9 +31,15 @@ export async function POST(request: Request) {
   try {
     if (isSupabaseConfigured()) {
       const member = await findMemberByEmail(email);
-      hasAccess = member ? member.status !== "inactive" : !(await hasTeamMembers()) && email === adminEmail;
+      if (member && member.status !== "inactive") {
+        hasAccess = member.role === "admin"
+          ? await verifySitePassword(suppliedPassword, configuredPassword)
+          : await verifyMemberPassword(suppliedPassword, member.password_hash);
+      } else if (!member && !(await hasTeamMembers()) && email === adminEmail) {
+        hasAccess = await verifySitePassword(suppliedPassword, configuredPassword);
+      }
     } else {
-      hasAccess = email === adminEmail;
+      hasAccess = email === adminEmail && await verifySitePassword(suppliedPassword, configuredPassword);
     }
   } catch {
     const failureUrl = new URL("/login", request.url);

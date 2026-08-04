@@ -13,8 +13,9 @@ export function PasswordField() {
         name="password"
         type={visible ? "text" : "password"}
         autoComplete="current-password"
+        maxLength={128}
         required
-        placeholder="Enter shared password"
+        placeholder="Enter your password"
       />
       <button
         className="password-toggle"

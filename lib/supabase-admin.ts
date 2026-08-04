@@ -6,6 +6,7 @@ type SupabaseMemberRow = {
   role: "admin" | "member";
   status: "active" | "invited" | "inactive";
   avatar_color: string;
+  password_hash: string | null;
 };
 
 type SupabaseTeamRow = {
@@ -39,6 +40,7 @@ export type Member = {
   role: "admin" | "member";
   status: "active" | "invited" | "inactive";
   avatarColor: string;
+  hasPassword: boolean;
 };
 
 export type TeamSettings = {
@@ -217,7 +219,7 @@ export async function requireAdmin(request: Request) {
 }
 
 export function mapMember(row: SupabaseMemberRow): Member {
-  return { id: row.id, name: row.full_name, email: row.email, role: row.role, status: row.status, avatarColor: row.avatar_color };
+  return { id: row.id, name: row.full_name, email: row.email, role: row.role, status: row.status, avatarColor: row.avatar_color, hasPassword: Boolean(row.password_hash) };
 }
 
 export function mapSettings(row: SupabaseTeamRow): TeamSettings {

@@ -19,6 +19,7 @@ create table if not exists public.team_members (
   full_name text not null check (char_length(full_name) between 1 and 120),
   role text not null default 'member' check (role in ('admin', 'member')),
   status text not null default 'active' check (status in ('active', 'inactive')),
+  password_hash text,
   auth_provider_id text,
   avatar_color text not null default '#a9d9c7',
   created_at timestamptz not null default now(),
@@ -92,6 +93,7 @@ on conflict (id) do update set
   allowed_mime_types = excluded.allowed_mime_types;
 
 -- Keep existing projects aligned when this schema is run again.
+alter table public.team_members add column if not exists password_hash text;
 update public.teams
 set currency = 'EUR'
 where currency not in ('EUR', 'VND');

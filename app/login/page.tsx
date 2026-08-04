@@ -5,7 +5,7 @@ import { PasswordField } from "./password-field";
 
 export const metadata: Metadata = {
   title: { absolute: "Sign in to Peptiking" },
-  description: "Use your team email and shared workspace password.",
+  description: "Use your team email and assigned password.",
 };
 
 function safeNext(value: string | string[] | undefined) {
@@ -35,7 +35,7 @@ export default async function LoginPage({ searchParams }: {
         </div>
         <p className="eyebrow">Private workspace</p>
         <h1>Sign in to Peptiking.</h1>
-        <p className="login-copy">Use your team email and the shared workspace password. Your member role determines what you can access.</p>
+        <p className="login-copy">Use your team email and assigned password. Administrators use the private admin password.</p>
 
         {showSetup ? (
           <div className="login-alert setup" role="alert">
