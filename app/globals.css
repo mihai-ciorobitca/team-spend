@@ -2416,7 +2416,7 @@ body {
   inset: 0;
   width: 100%;
   height: 100vh;
-  height: var(--login-viewport-height, 100dvh);
+  height: 100dvh;
   min-height: 0;
   overflow: hidden;
   overscroll-behavior: none;
@@ -2466,40 +2466,61 @@ body {
 
 @media (max-width: 699px) {
   html.login-keyboard-open .login-shell {
-    align-items: stretch;
-    padding: 8px;
+    padding: 12px;
+  }
+
+  .login-card {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    width: calc(100% - 24px);
+    height: var(--login-card-resting-height, auto);
+    transform: translate(-50%, -50%);
+    transition:
+      top 200ms ease,
+      left 200ms ease,
+      width 200ms ease,
+      height 200ms ease,
+      transform 200ms ease,
+      border-radius 200ms ease,
+      padding 200ms ease;
+  }
+
+  html.login-measuring-card .login-card {
+    height: auto !important;
+    transition: none !important;
   }
 
   html.login-keyboard-open .login-card {
-    height: calc(var(--login-viewport-height) - 16px);
+    top: var(--login-viewport-top, 0px);
+    left: var(--login-viewport-left, 0px);
+    width: var(--login-viewport-width, 100vw);
+    height: var(--login-viewport-height, 100dvh);
     max-height: none;
-    padding: 12px 20px;
-    border-radius: 14px;
-    overflow: hidden;
+    margin: 0;
+    padding: 14px 20px;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+    overflow-x: hidden;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    transform: translate(0, 0);
+    -webkit-overflow-scrolling: touch;
   }
 
   html.login-keyboard-open .login-card-header {
-    margin-bottom: 8px;
-  }
-
-  html.login-keyboard-open .brand-logo {
-    width: 100px;
-    height: auto;
-  }
-
-  html.login-keyboard-open .login-lock {
-    width: 36px;
-    height: 36px;
+    display: none;
   }
 
   html.login-keyboard-open .login-card .eyebrow {
-    margin: 0;
+    margin: 0 0 4px;
     font-size: 10px;
   }
 
   html.login-keyboard-open .login-card h1 {
-    margin-top: 4px;
-    font-size: 29px;
+    margin-top: 0;
+    font-size: 28px;
   }
 
   html.login-keyboard-open .login-copy {
