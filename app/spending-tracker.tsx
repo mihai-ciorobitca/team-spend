@@ -43,7 +43,7 @@ type BootstrapPayload = {
 };
 
 const DEMO_MEMBERS: Member[] = [
-  { id: "m-rog", name: "Rog", email: "owner@local.demo", role: "admin", status: "active", avatarColor: "#f3bf73" },
+  { id: "m-rog", name: "Admin", email: "admin@peptikingmedia.com", role: "admin", status: "active", avatarColor: "#f3bf73" },
   { id: "m-maya", name: "Maya Chen", email: "maya@northstar.team", role: "member", status: "active", avatarColor: "#a9d9c7" },
   { id: "m-niko", name: "Niko Rahman", email: "niko@northstar.team", role: "member", status: "active", avatarColor: "#f5a98c" },
   { id: "m-lena", name: "Lena Park", email: "lena@northstar.team", role: "member", status: "active", avatarColor: "#c5b8e8" },

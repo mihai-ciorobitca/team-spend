@@ -15,6 +15,10 @@ type SupabaseTeamRow = {
   require_proof: boolean;
 };
 
+const DEFAULT_ADMIN_EMAIL = "admin@peptikingmedia.com";
+const DEFAULT_ADMIN_NAME = "Admin";
+const LEGACY_ADMIN_EMAIL = "owner@local.demo";
+
 type SupabaseExpenseRow = {
   id: string;
   merchant: string;
@@ -111,12 +115,12 @@ function requestIdentity(request: Request) {
   }
 
   if (userId && email) return { userId, email: email.toLowerCase(), fullName };
-  if (process.env.NODE_ENV !== "production") return { userId: "local-owner", email: "owner@local.demo", fullName: "Rog" };
+  if (process.env.NODE_ENV !== "production") return { userId: "local-owner", email: DEFAULT_ADMIN_EMAIL, fullName: DEFAULT_ADMIN_NAME };
   if (process.env.SITE_PASSWORD) {
     return {
       userId: "shared-password-user",
-      email: (process.env.PEPTIKING_ADMIN_EMAIL || process.env.TEAMSPEND_ADMIN_EMAIL || "owner@local.demo").toLowerCase(),
-      fullName: process.env.PEPTIKING_ADMIN_NAME || process.env.TEAMSPEND_ADMIN_NAME || "Rog",
+      email: (process.env.PEPTIKING_ADMIN_EMAIL || DEFAULT_ADMIN_EMAIL).toLowerCase(),
+      fullName: process.env.PEPTIKING_ADMIN_NAME || DEFAULT_ADMIN_NAME,
     };
   }
   throw new ApiError("Sign in to access this team", 401);
@@ -130,6 +134,13 @@ export async function requireMember(request: Request): Promise<SupabaseMemberRow
 
   if (rows[0]) {
     if (rows[0].status === "inactive") throw new ApiError("Your team access is inactive", 403);
+    if ((identity.userId === "shared-password-user" || identity.userId === "local-owner") && rows[0].role === "admin" && rows[0].full_name !== identity.fullName) {
+      const renamed = await supabaseRequest<SupabaseMemberRow[]>(
+        `/rest/v1/team_members?id=eq.${encodeURIComponent(rows[0].id)}&select=*`,
+        { method: "PATCH", headers: { Prefer: "return=representation" }, body: JSON.stringify({ full_name: identity.fullName, status: "active", auth_provider_id: identity.userId }) },
+      );
+      return renamed[0] ?? { ...rows[0], full_name: identity.fullName, status: "active" };
+    }
     if (rows[0].status === "invited") {
       const activated = await supabaseRequest<SupabaseMemberRow[]>(
         `/rest/v1/team_members?id=eq.${encodeURIComponent(rows[0].id)}&select=*`,
@@ -138,6 +149,23 @@ export async function requireMember(request: Request): Promise<SupabaseMemberRow
       return activated[0] ?? { ...rows[0], status: "active" };
     }
     return rows[0];
+  }
+
+  if (identity.userId === "shared-password-user" || identity.userId === "local-owner") {
+    const legacyAdmins = await supabaseRequest<SupabaseMemberRow[]>(
+      `/rest/v1/team_members?email=eq.${encodeURIComponent(LEGACY_ADMIN_EMAIL)}&role=eq.admin&select=*&limit=1`,
+    );
+    if (legacyAdmins[0]) {
+      const renamed = await supabaseRequest<SupabaseMemberRow[]>(
+        `/rest/v1/team_members?id=eq.${encodeURIComponent(legacyAdmins[0].id)}&select=*`,
+        {
+          method: "PATCH",
+          headers: { Prefer: "return=representation" },
+          body: JSON.stringify({ email: identity.email, full_name: identity.fullName, status: "active", auth_provider_id: identity.userId }),
+        },
+      );
+      if (renamed[0]) return renamed[0];
+    }
   }
 
   const existing = await supabaseRequest<Array<{ id: string }>>("/rest/v1/team_members?select=id&limit=1");

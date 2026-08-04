@@ -24,7 +24,7 @@ For an existing Peptiking database, run [`supabase/migrations/20260804_professio
 
 Set `SITE_PASSWORD` in the production environment to protect every page and API route with a shared password. Access is remembered for seven days in a secure, HttpOnly cookie. Changing the environment value immediately invalidates existing access cookies after redeployment.
 
-On Vercel, the unlocked shared-password session uses `owner@local.demo` as its server identity so it matches the initial local admin. `PEPTIKING_ADMIN_EMAIL` and `PEPTIKING_ADMIN_NAME` can override that identity when needed.
+On Vercel, the unlocked shared-password session uses `admin@peptikingmedia.com` with the display name `Admin`. `PEPTIKING_ADMIN_EMAIL` and `PEPTIKING_ADMIN_NAME` can override that identity when needed.
 
 The service-role key is used only in server route handlers and is never sent to the browser. Production access is designed for a private OpenAI Site, which supplies the signed-in user's verified email to the app server.
 
